@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Lock, User as UserIcon } from 'lucide-react';
+import { X, Mail, Lock, User as UserIcon, Phone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthModalProps {
@@ -14,7 +14,8 @@ export default function AuthModal({ onClose }: AuthModalProps) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    name: ''
+    name: '',
+    phone: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +29,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
       if (isLogin) {
         await signIn(formData.email, formData.password);
       } else {
-        await signUp(formData.email, formData.password, formData.name);
+        await signUp(formData.email, formData.password, formData.name, formData.phone);
       }
       onClose();
       const from = (history.state && (history.state as any).usr && (history.state as any).usr.from) || '/dashboard';
@@ -87,6 +88,20 @@ export default function AuthModal({ onClose }: AuthModalProps) {
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 required
+              />
+            </div>
+          )}
+
+          {!isLogin && (
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="tel"
+                name="phone"
+                placeholder="Telefone"
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
             </div>
           )}
