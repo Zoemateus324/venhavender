@@ -41,8 +41,8 @@ export default function Header({
   return (
     <>
       <header className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link to="/" className="inline-block">
@@ -53,12 +53,12 @@ export default function Header({
             </div>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden md:block flex-1 max-w-2xl mx-8">
+            <div className="hidden md:block flex-1 max-w-2xl mx-4 lg:mx-8">
               <form onSubmit={handleSearch} className="relative">
                 <input
                   type="text"
                   placeholder="O que você está procurando?"
-                  className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  className="w-full pl-4 pr-12 py-2.5 lg:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -72,12 +72,12 @@ export default function Header({
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
               {user ? (
                 <>
                   <button
                     onClick={onCreateAd}
-                    className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center gap-2 transition-colors"
+                    className="bg-orange-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center gap-2 transition-colors"
                   >
                     <Plus size={20} />
                     Anunciar
@@ -144,12 +144,12 @@ export default function Header({
           </div>
 
           {/* Mobile Search */}
-          <div className="md:hidden pb-4">
+          <div className="md:hidden pb-3">
             <form onSubmit={handleSearch} className="relative">
               <input
                 type="text"
                 placeholder="O que você está procurando?"
-                className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full pl-4 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

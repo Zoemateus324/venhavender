@@ -94,9 +94,9 @@ export default function AdGrid({
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {[...Array(8)].map((_, index) => (
-          <div key={index} className="bg-gray-200 rounded-lg h-80 animate-pulse" />
+          <div key={index} className="bg-gray-200 rounded-lg h-56 sm:h-64 md:h-72 lg:h-80 animate-pulse" />
         ))}
       </div>
     );
@@ -105,18 +105,18 @@ export default function AdGrid({
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+      <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
           <div className="flex items-center gap-2">
             <Filter size={20} className="text-gray-500" />
             <span className="font-medium text-gray-700">Filtros:</span>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-1 w-full">
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-full sm:w-auto"
             >
               <option value="">Todas as categorias</option>
               {categories.map((category) => (
@@ -129,7 +129,7 @@ export default function AdGrid({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-full sm:w-auto"
             >
               <option value="newest">Mais recentes</option>
               <option value="price_low">Menor preço</option>
@@ -151,7 +151,7 @@ export default function AdGrid({
           <div className="text-gray-500">Tente ajustar os filtros de busca</div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {ads.map((ad) => (
             <AdCard
               key={ad.id}

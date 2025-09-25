@@ -37,9 +37,9 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden h-full flex flex-col">
       {/* Image Container */}
-      <Link to={`/ads/${ad.id}`} className="block relative h-48 bg-gray-200">
+      <Link to={`/ads/${ad.id}`} className="block relative h-44 sm:h-48 md:h-52 bg-gray-200">
         {ad.photos.length > 0 ? (
           <>
             <img
@@ -108,19 +108,19 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
       </Link>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <Link to={`/ads/${ad.id}`} className="block">
-          <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
+          <h3 className="font-semibold text-base sm:text-lg text-gray-900 mb-2 line-clamp-2">
             {ad.title}
           </h3>
         </Link>
         
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+        <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2">
           {ad.description}
         </p>
 
         {/* Price */}
-        <div className="text-2xl font-bold text-orange-600 mb-3">
+        <div className="text-xl sm:text-2xl font-bold text-orange-600 mb-3">
           {formatPrice(ad.price)}
         </div>
 
@@ -137,7 +137,7 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
         </div>
 
         {/* Stats and Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div className="mt-auto flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-center gap-4 text-sm text-gray-500">
             <div className="flex items-center gap-1">
               <Eye size={14} />

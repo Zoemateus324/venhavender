@@ -45,12 +45,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="bg-orange-600 p-6 text-white">
-          <h2 className="text-2xl font-bold text-center">Entrar</h2>
+    <div className="container mx-auto px-3 sm:px-4 py-10 sm:py-12">
+      <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-orange-600 p-5 sm:p-6 text-white">
+          <h2 className="text-xl sm:text-2xl font-bold text-center">Entrar</h2>
         </div>
-        <div className="p-6">
+        <div className="p-5 sm:p-6">
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center gap-2">
               <AlertCircle size={18} />

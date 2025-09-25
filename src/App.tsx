@@ -146,7 +146,7 @@ function AppContent() {
             <div>
               <h4 className="font-semibold mb-3">Contato</h4>
               <p className="text-gray-300">contato@venhavender.com.br</p>
-              <p className="text-gray-300">(11) 99999-9999</p>
+            
             </div>
           </div>
           <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
