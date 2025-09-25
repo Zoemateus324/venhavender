@@ -10,12 +10,12 @@ interface Ad {
   price: number;
   status: 'pending' | 'active' | 'expired' | 'rejected';
   created_at: string;
-  user: {
+  user?: {
     id: string;
     name: string;
     email: string;
   };
-  category: {
+  category?: {
     id: string;
     name: string;
   };
@@ -28,37 +28,67 @@ const AdminAdsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [userFilter, setUserFilter] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('created_at');
   const [sortOrder, setSortOrder] = useState<string>('desc');
   const [selectedAds, setSelectedAds] = useState<string[]>([]);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; email: string }[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 20;
+  const [total, setTotal] = useState<number>(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchAds();
-  }, [statusFilter, sortBy, sortOrder]);
+  }, [statusFilter, categoryFilter, userFilter, sortBy, sortOrder, page, searchQuery]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchUsers();
+  }, []);
 
   const fetchAds = async () => {
     try {
       setLoading(true);
-      
+      // Count first
+      let countQuery = supabase
+        .from('ads')
+        .select('id', { count: 'exact', head: true });
+
+      if (statusFilter !== 'all') countQuery = countQuery.eq('status', statusFilter);
+      if (categoryFilter) countQuery = countQuery.eq('category_id', categoryFilter);
+      if (userFilter) countQuery = countQuery.eq('user_id', userFilter);
+      if (searchQuery) countQuery = countQuery.ilike('title', `%${searchQuery}%`);
+
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+      setTotal(count || 0);
+
+      // Data query with range
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
       let query = supabase
         .from('ads')
         .select(`
-          id, 
-          title, 
-          price, 
-          status, 
-          created_at, 
+          id,
+          title,
+          price,
+          status,
+          created_at,
           views,
           user:user_id (id, name, email),
           category:category_id (id, name)
         `)
-        .order(sortBy, { ascending: sortOrder === 'asc' });
+        .order(sortBy, { ascending: sortOrder === 'asc' })
+        .range(from, to);
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
+      if (statusFilter !== 'all') query = query.eq('status', statusFilter);
+      if (categoryFilter) query = query.eq('category_id', categoryFilter);
+      if (userFilter) query = query.eq('user_id', userFilter);
+      if (searchQuery) query = query.ilike('title', `%${searchQuery}%`);
 
       const { data, error } = await query;
 
@@ -67,15 +97,16 @@ const AdminAdsPage: React.FC = () => {
       // Fetch report counts for each ad
       const adsWithReports = await Promise.all(
         (data || []).map(async (ad) => {
-          const { count, error: reportError } = await supabase
-            .from('reports')
-            .select('id', { count: 'exact', head: true })
-            .eq('ad_id', ad.id);
-
-          return {
-            ...ad,
-            reports_count: count || 0
-          };
+          try {
+            const { count, error: reportError } = await supabase
+              .from('reports')
+              .select('id', { count: 'exact', head: true })
+              .eq('ad_id', ad.id);
+            if (reportError) throw reportError;
+            return { ...ad, reports_count: count || 0 };
+          } catch (_) {
+            return { ...ad, reports_count: 0 };
+          }
         })
       );
 
@@ -88,10 +119,28 @@ const AdminAdsPage: React.FC = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const { data } = await supabase.from('categories').select('id, name').order('name');
+      setCategories(data || []);
+    } catch (error) {
+      // ignore
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const { data } = await supabase.from('users').select('id, email').order('email');
+      setUsers(data || []);
+    } catch (error) {
+      // ignore
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Filter ads locally based on search query
-    // In a real app, you might want to do this server-side
+    setPage(1);
+    fetchAds();
   };
 
   const handleStatusChange = async (adId: string, newStatus: 'pending' | 'active' | 'expired' | 'rejected') => {
@@ -287,6 +336,30 @@ const AdminAdsPage: React.FC = () => {
                 <option value="rejected">Rejeitados</option>
               </select>
             </div>
+            <div>
+              <select
+                value={categoryFilter}
+                onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="">Todas as categorias</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={userFilter}
+                onChange={(e) => { setUserFilter(e.target.value); setPage(1); }}
+                className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="">Todos os usuários</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.email}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex items-center space-x-2">
               <span className="text-gray-500 text-sm">Ordenar por:</span>
               <select
@@ -386,13 +459,13 @@ const AdminAdsPage: React.FC = () => {
                       <div className="flex items-center">
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 line-clamp-1">{ad.title}</div>
-                          <div className="text-sm text-gray-500">{ad.category.name}</div>
+                      <div className="text-sm text-gray-500">{ad.category?.name || 'Sem categoria'}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{ad.user.name}</div>
-                      <div className="text-sm text-gray-500">{ad.user.email}</div>
+                      <div className="text-sm text-gray-900">{ad.user?.name || '—'}</div>
+                      <div className="text-sm text-gray-500">{ad.user?.email || ''}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{formatCurrency(ad.price)}</div>
@@ -484,6 +557,28 @@ const AdminAdsPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 text-sm text-gray-600">
+              <div>
+                Página {page} de {Math.max(1, Math.ceil(total / pageSize))} — {total} registros
+              </div>
+              <div className="space-x-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className={`px-3 py-1 rounded border ${page === 1 ? 'text-gray-300 border-gray-200' : 'text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                >
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setPage((p) => (p < Math.ceil(total / pageSize) ? p + 1 : p))}
+                  disabled={page >= Math.ceil(total / pageSize)}
+                  className={`px-3 py-1 rounded border ${page >= Math.ceil(total / pageSize) ? 'text-gray-300 border-gray-200' : 'text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                >
+                  Próxima
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -11,7 +11,8 @@ interface UserData {
   created_at: string;
   avatar_url?: string;
   phone?: string;
-  status: 'active' | 'suspended' | 'pending';
+  plan_status: 'active' | 'inactive' | 'expired';
+  plan_type?: 'free' | 'silver' | 'gold';
   ads_count: number;
   last_login?: string;
 }
@@ -46,8 +47,8 @@ const AdminUsersPage: React.FC = () => {
           created_at, 
           avatar_url,
           phone,
-          status,
-          last_login
+          plan_status,
+          plan_type
         `)
         .order(sortBy, { ascending: sortOrder === 'asc' });
 
@@ -56,7 +57,7 @@ const AdminUsersPage: React.FC = () => {
       }
 
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        query = query.eq('plan_status', statusFilter);
       }
 
       const { data, error } = await query;
@@ -110,17 +111,17 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: 'active' | 'suspended' | 'pending') => {
+  const handleStatusChange = async (userId: string, newStatus: 'active' | 'inactive' | 'expired') => {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ status: newStatus })
+        .update({ plan_status: newStatus })
         .eq('id', userId);
 
       if (error) throw error;
 
-      setUsers(users.map(user => user.id === userId ? { ...user, status: newStatus } : user));
-      toast.success(`Status do usuário alterado para ${newStatus}`);
+      setUsers(users.map(user => user.id === userId ? { ...user, plan_status: newStatus } : user));
+      toast.success(`Status do plano alterado para ${newStatus}`);
     } catch (error) {
       console.error('Error updating user status:', error);
       toast.error('Erro ao atualizar status do usuário');
@@ -178,16 +179,16 @@ const AdminUsersPage: React.FC = () => {
         setUsers(users.map(user => selectedUsers.includes(user.id) ? { ...user, role: newRole } : user));
         toast.success(`${selectedUsers.length} usuários atualizados para ${newRole}`);
       } else {
-        const newStatus = action === 'activate' ? 'active' : 'suspended';
+        const newStatus: 'active' | 'inactive' = action === 'activate' ? 'active' : 'inactive';
         const { error } = await supabase
           .from('users')
-          .update({ status: newStatus })
+          .update({ plan_status: newStatus })
           .in('id', selectedUsers);
 
         if (error) throw error;
 
-        setUsers(users.map(user => selectedUsers.includes(user.id) ? { ...user, status: newStatus as any } : user));
-        toast.success(`${selectedUsers.length} usuários ${action === 'activate' ? 'ativados' : 'suspensos'} com sucesso`);
+        setUsers(users.map(user => selectedUsers.includes(user.id) ? { ...user, plan_status: newStatus } : user));
+        toast.success(`${selectedUsers.length} usuários ${action === 'activate' ? 'ativados' : 'inativados'} com sucesso`);
       }
 
       setSelectedUsers([]);
@@ -230,10 +231,10 @@ const AdminUsersPage: React.FC = () => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800';
-      case 'suspended':
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800';
+      case 'expired':
         return 'bg-red-100 text-red-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -243,10 +244,10 @@ const AdminUsersPage: React.FC = () => {
     switch (status) {
       case 'active':
         return 'Ativo';
-      case 'suspended':
-        return 'Suspenso';
-      case 'pending':
-        return 'Pendente';
+      case 'inactive':
+        return 'Inativo';
+      case 'expired':
+        return 'Expirado';
       default:
         return status;
     }
@@ -317,8 +318,8 @@ const AdminUsersPage: React.FC = () => {
               >
                 <option value="all">Todos</option>
                 <option value="active">Ativo</option>
-                <option value="suspended">Suspenso</option>
-                <option value="pending">Pendente</option>
+                <option value="inactive">Inativo</option>
+                <option value="expired">Expirado</option>
               </select>
             </div>
             <div className="flex items-center space-x-2">
@@ -440,15 +441,15 @@ const AdminUsersPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(user.status)}`}>
-                        {getStatusText(user.status)}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(user.plan_status)}`}>
+                        {getStatusText(user.plan_status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(user.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.last_login ? formatDate(user.last_login) : 'Nunca'}
+                      {user.last_login ? formatDate(user.last_login) : '—'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.ads_count}

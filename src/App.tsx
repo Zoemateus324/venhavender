@@ -1,20 +1,46 @@
-import React, { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import Header from './components/Header';
 import { Toaster } from 'react-hot-toast';
 import AuthModal from './components/AuthModal';
 import CreateAdModal from './components/CreateAdModal';
 import { supabase } from './lib/supabase';
-import { Favorite, Ad } from './types';
-import { Search } from 'lucide-react';
+ 
 
 function AppContent() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCreateAd, setShowCreateAd] = useState(false);
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  
+
+  // Track page views for analytics
+  useEffect(() => {
+    const deviceKey = 'vv_device_id';
+    let deviceId = localStorage.getItem(deviceKey);
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      localStorage.setItem(deviceKey, deviceId);
+    }
+
+    const recordView = async () => {
+      try {
+        await supabase.from('page_views').insert([
+          {
+            device_id: deviceId,
+            user_id: user?.id || null,
+            path: location.pathname + (location.search || ''),
+          },
+        ]);
+      } catch (e) {
+        // ignore analytics errors
+      }
+    };
+
+    recordView();
+  }, [location.pathname, location.search, user?.id]);
 
   const handleSearch = (query: string) => {
     navigate(`/ads?search=${encodeURIComponent(query)}`);
@@ -52,51 +78,7 @@ function AppContent() {
     }
   };
 
-
-
-  const handleContactAd = (ad: Ad) => {
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
-    console.log('Contact ad:', ad);
-  };
-
-  const handleFavoriteAd = async (ad: Ad) => {
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    try {
-      const existingFavorite = favorites.find(f => f.ad_id === ad.id);
-
-      if (existingFavorite) {
-        // Remove favorite
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('id', existingFavorite.id);
-
-        if (error) throw error;
-        setFavorites(prev => prev.filter(f => f.id !== existingFavorite.id));
-      } else {
-        // Add favorite
-        const { data, error } = await supabase
-          .from('favorites')
-          .insert([{ user_id: user.id, ad_id: ad.id }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        setFavorites(prev => [...prev, data]);
-      }
-    } catch (error) {
-      console.error('Error updating favorite:', error);
-    }
-  };
-
-  const favoriteIds = favorites.map(f => f.ad_id);
+ 
 
   return (
     <>

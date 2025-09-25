@@ -28,6 +28,7 @@ const AdminReportsPage: React.FC = () => {
   const [statCards, setStatCards] = useState<StatCard[]>([]);
   const [adsChartData, setAdsChartData] = useState<ChartData | null>(null);
   const [usersChartData, setUsersChartData] = useState<ChartData | null>(null);
+  const [visitorsCount, setVisitorsCount] = useState<number>(0);
   const [categoryDistribution, setCategoryDistribution] = useState<ChartData | null>(null);
   const [revenueData, setRevenueData] = useState<ChartData | null>(null);
 
@@ -47,7 +48,8 @@ const AdminReportsPage: React.FC = () => {
         fetchAdsChartData(),
         fetchUsersChartData(),
         fetchCategoryDistribution(),
-        fetchRevenueData()
+        fetchRevenueData(),
+        fetchVisitors()
       ]);
       
       setLoading(false);
@@ -55,6 +57,23 @@ const AdminReportsPage: React.FC = () => {
       console.error('Error fetching dashboard data:', error);
       toast.error('Erro ao carregar dados do dashboard');
       setLoading(false);
+    }
+  };
+
+  const fetchVisitors = async () => {
+    try {
+      const periodStart = getPeriodStartDate();
+      // visitantes únicos por device_id
+      const { data, error } = await supabase
+        .from('page_views')
+        .select('device_id')
+        .gte('created_at', periodStart.toISOString());
+      if (error) throw error;
+      const unique = new Set((data || []).map((r: any) => r.device_id));
+      setVisitorsCount(unique.size);
+    } catch (error) {
+      // se a tabela não existir ainda, mantém 0
+      setVisitorsCount(0);
     }
   };
 
@@ -185,21 +204,26 @@ const AdminReportsPage: React.FC = () => {
     try {
       const periodStart = getPeriodStartDate();
       const labels = generateTimeLabels();
-      
-      // In a real app, you would aggregate this data in the database
-      // For now, we'll generate some mock data based on the date range
-      const data = [];
-      for (let i = 0; i < labels.length; i++) {
-        // Generate some random but somewhat realistic data
-        data.push(Math.floor(Math.random() * 20) + 5);
-      }
-      
+      const buckets = createBuckets(labels);
+
+      const { data, error } = await supabase
+        .from('ads')
+        .select('id, created_at')
+        .gte('created_at', periodStart.toISOString());
+
+      if (error) throw error;
+
+      (data || []).forEach((row: any) => {
+        const idx = bucketIndex(new Date(row.created_at), dateRange, labels);
+        if (idx !== -1) buckets[idx]++;
+      });
+
       setAdsChartData({
         labels,
         datasets: [
           {
             label: 'Novos Anúncios',
-            data,
+            data: buckets,
             backgroundColor: 'rgba(34, 197, 94, 0.2)',
             borderColor: 'rgba(34, 197, 94, 1)',
             borderWidth: 2
@@ -213,32 +237,30 @@ const AdminReportsPage: React.FC = () => {
 
   const fetchUsersChartData = async () => {
     try {
+      const periodStart = getPeriodStartDate();
       const labels = generateTimeLabels();
-      
-      // Mock data for users chart
-      const newUsersData = [];
-      const activeUsersData = [];
-      
-      for (let i = 0; i < labels.length; i++) {
-        newUsersData.push(Math.floor(Math.random() * 15) + 2);
-        activeUsersData.push(Math.floor(Math.random() * 50) + 20);
-      }
-      
+      const buckets = createBuckets(labels);
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, created_at')
+        .gte('created_at', periodStart.toISOString());
+
+      if (error) throw error;
+
+      (data || []).forEach((row: any) => {
+        const idx = bucketIndex(new Date(row.created_at), dateRange, labels);
+        if (idx !== -1) buckets[idx]++;
+      });
+
       setUsersChartData({
         labels,
         datasets: [
           {
             label: 'Novos Usuários',
-            data: newUsersData,
+            data: buckets,
             backgroundColor: 'rgba(59, 130, 246, 0.2)',
             borderColor: 'rgba(59, 130, 246, 1)',
-            borderWidth: 2
-          },
-          {
-            label: 'Usuários Ativos',
-            data: activeUsersData,
-            backgroundColor: 'rgba(99, 102, 241, 0.2)',
-            borderColor: 'rgba(99, 102, 241, 1)',
             borderWidth: 2
           }
         ]
@@ -250,38 +272,30 @@ const AdminReportsPage: React.FC = () => {
 
   const fetchCategoryDistribution = async () => {
     try {
-      // In a real app, you would fetch this from the database
-      // For now, we'll use mock data
-      const categories = [
-        'Imóveis',
-        'Veículos',
-        'Eletrônicos',
-        'Móveis',
-        'Serviços',
-        'Outros'
-      ];
-      
-      const data = [25, 18, 15, 12, 20, 10];
-      
-      const backgroundColors = [
-        'rgba(255, 99, 132, 0.6)',
-        'rgba(54, 162, 235, 0.6)',
-        'rgba(255, 206, 86, 0.6)',
-        'rgba(75, 192, 192, 0.6)',
-        'rgba(153, 102, 255, 0.6)',
-        'rgba(255, 159, 64, 0.6)'
-      ];
-      
+      // Conta anúncios ativos por categoria
+      const { data: ads, error: adsErr } = await supabase
+        .from('ads')
+        .select('category:category_id (id, name)')
+        .eq('status', 'active');
+      if (adsErr) throw adsErr;
+
+      const counts = new Map<string, { name: string; count: number }>();
+      (ads || []).forEach((row: any) => {
+        const id = row.category?.id || 'sem';
+        const name = row.category?.name || 'Sem categoria';
+        const prev = counts.get(id)?.count || 0;
+        counts.set(id, { name, count: prev + 1 });
+      });
+
+      const labels = Array.from(counts.values()).map((v) => v.name);
+      const data = Array.from(counts.values()).map((v) => v.count);
+      const backgroundColor = labels.map((_, i) => defaultColors[i % defaultColors.length]);
+
       setCategoryDistribution({
-        labels: categories,
+        labels,
         datasets: [
-          {
-            label: 'Distribuição por Categoria',
-            data,
-            backgroundColor: backgroundColors,
-            borderWidth: 1
-          }
-        ]
+          { label: 'Distribuição por Categoria', data, backgroundColor, borderWidth: 1 },
+        ],
       });
     } catch (error) {
       console.error('Error fetching category distribution:', error);
@@ -290,21 +304,30 @@ const AdminReportsPage: React.FC = () => {
 
   const fetchRevenueData = async () => {
     try {
+      const periodStart = getPeriodStartDate();
       const labels = generateTimeLabels();
-      
-      // Mock data for revenue
-      const revenueData = [];
-      
-      for (let i = 0; i < labels.length; i++) {
-        revenueData.push(Math.floor(Math.random() * 2000) + 500);
-      }
-      
+      const buckets = createBuckets(labels, 0); // numeric sums
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('amount, payment_date, created_at, status')
+        .gte('created_at', periodStart.toISOString())
+        .eq('status', 'approved');
+
+      if (error) throw error;
+
+      (data || []).forEach((row: any) => {
+        const when = new Date(row.payment_date || row.created_at);
+        const idx = bucketIndex(when, dateRange, labels);
+        if (idx !== -1) buckets[idx] += Number(row.amount || 0);
+      });
+
       setRevenueData({
         labels,
         datasets: [
           {
             label: 'Receita (R$)',
-            data: revenueData,
+            data: buckets,
             backgroundColor: 'rgba(139, 92, 246, 0.2)',
             borderColor: 'rgba(139, 92, 246, 1)',
             borderWidth: 2
@@ -380,6 +403,48 @@ const AdminReportsPage: React.FC = () => {
     
     return labels;
   };
+
+  // Helpers for bucketing
+  const createBuckets = (labels: string[], fill = 0) => Array(labels.length).fill(fill);
+
+  const bucketIndex = (date: Date, range: typeof dateRange, labels: string[]) => {
+    const now = new Date();
+    switch (range) {
+      case '7d': {
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          if (date.toDateString() === d.toDateString()) return 6 - i;
+        }
+        return -1;
+      }
+      case '30d': {
+        // Approximate by 3-day buckets
+        const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+        const idx = Math.floor((29 - daysDiff) / 3);
+        return idx >= 0 && idx < labels.length ? idx : -1;
+      }
+      case '90d': {
+        // 10-day buckets
+        const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+        const idx = Math.floor((90 - daysDiff) / 10);
+        return idx >= 0 && idx < labels.length ? idx : -1;
+      }
+      case '12m': {
+        const idx = 11 - (now.getMonth() - date.getMonth() + 12) % 12;
+        return idx >= 0 && idx < labels.length ? idx : -1;
+      }
+    }
+  };
+
+  const defaultColors = [
+    'rgba(255, 99, 132, 0.6)',
+    'rgba(54, 162, 235, 0.6)',
+    'rgba(255, 206, 86, 0.6)',
+    'rgba(75, 192, 192, 0.6)',
+    'rgba(153, 102, 255, 0.6)',
+    'rgba(255, 159, 64, 0.6)'
+  ];
 
   const handleRefresh = () => {
     fetchDashboardData();
@@ -475,6 +540,18 @@ const AdminReportsPage: React.FC = () => {
               </div>
             ))}
           </div>
+          {/* Visitors */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Visitantes únicos no período</p>
+                <p className="text-2xl font-bold mt-1">{visitorsCount}</p>
+              </div>
+              <div className="p-2 rounded-full bg-gray-50">
+                <BarChart3 size={24} className="text-teal-600" />
+              </div>
+            </div>
+          </div>
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -482,10 +559,13 @@ const AdminReportsPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg font-medium mb-4">Usuários</h2>
               <div className="h-64">
-                {/* In a real app, you would render a chart library component here */}
-                <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">Gráfico de Usuários</p>
-                </div>
+                {usersChartData ? (
+                  <SimpleLineChart data={usersChartData} />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">Sem dados</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -493,10 +573,13 @@ const AdminReportsPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg font-medium mb-4">Anúncios</h2>
               <div className="h-64">
-                {/* In a real app, you would render a chart library component here */}
-                <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">Gráfico de Anúncios</p>
-                </div>
+                {adsChartData ? (
+                  <SimpleBarChart data={adsChartData} />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">Sem dados</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -504,10 +587,13 @@ const AdminReportsPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg font-medium mb-4">Distribuição por Categoria</h2>
               <div className="h-64">
-                {/* In a real app, you would render a chart library component here */}
-                <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">Gráfico de Distribuição por Categoria</p>
-                </div>
+                {categoryDistribution ? (
+                  <SimplePieChart data={categoryDistribution} />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">Sem dados</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -515,10 +601,13 @@ const AdminReportsPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg font-medium mb-4">Receita</h2>
               <div className="h-64">
-                {/* In a real app, you would render a chart library component here */}
-                <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
-                  <p className="text-gray-500">Gráfico de Receita</p>
-                </div>
+                {revenueData ? (
+                  <SimpleLineChart data={revenueData} />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">Sem dados</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -589,3 +678,67 @@ const AdminReportsPage: React.FC = () => {
 };
 
 export default AdminReportsPage;
+
+// Simple inline charts without external libs
+function SimpleBarChart({ data }: { data: ChartData }) {
+  const max = Math.max(1, ...data.datasets[0].data);
+  return (
+    <div className="h-full flex items-end gap-2 p-4 bg-gray-50 rounded-lg">
+      {data.datasets[0].data.map((v, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center">
+          <div
+            className="w-full bg-green-500 rounded-t"
+            style={{ height: `${(v / max) * 90}%` }}
+            title={`${data.labels[i]}: ${v}`}
+          />
+          <span className="mt-2 text-xs text-gray-500 truncate w-full text-center">{data.labels[i]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SimpleLineChart({ data }: { data: ChartData }) {
+  // Render as bar-like minimal chart for simplicity
+  const color = Array.isArray(data.datasets[0].borderColor) ? '#2563eb' : (data.datasets[0].borderColor as string) || '#2563eb';
+  const max = Math.max(1, ...data.datasets[0].data);
+  return (
+    <div className="h-full flex items-end gap-1 p-4 bg-gray-50 rounded-lg">
+      {data.datasets[0].data.map((v, i) => (
+        <div key={i} className="flex-1">
+          <div
+            className="w-full rounded-t"
+            style={{ height: `${(v / max) * 90}%`, backgroundColor: color, opacity: 0.5 }}
+            title={`${data.labels[i]}: ${v}`}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SimplePieChart({ data }: { data: ChartData }) {
+  const total = data.datasets[0].data.reduce((a, b) => a + b, 0) || 1;
+  const colors = (data.datasets[0].backgroundColor as string[]) || [];
+  return (
+    <div className="h-full flex items-center justify-center">
+      <div className="w-48 h-48 rounded-full overflow-hidden relative">
+        {/* Simple donut approximation using vertical slices */}
+        <div className="absolute inset-0 flex">
+          {data.datasets[0].data.map((v, i) => (
+            <div key={i} style={{ width: `${(v / total) * 100}%`, backgroundColor: colors[i] || '#ddd' }} />
+          ))}
+        </div>
+        <div className="absolute inset-6 bg-white rounded-full shadow-inner" />
+      </div>
+      <div className="ml-4 space-y-1 text-sm">
+        {data.labels.map((label, i) => (
+          <div key={i} className="flex items-center">
+            <span className="inline-block w-3 h-3 mr-2 rounded" style={{ backgroundColor: colors[i] || '#ddd' }} />
+            {label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
