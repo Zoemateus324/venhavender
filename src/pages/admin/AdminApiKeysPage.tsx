@@ -83,7 +83,12 @@ export default function AdminApiKeysPage() {
   };
 
   if (isLoading) return <div className="p-8 text-center">Carregando chaves de API...</div>;
-  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+  if (error) return (
+    <div className="p-8 text-center text-red-500">
+      {error}
+      <div className="text-sm text-gray-500 mt-2">Verifique se as migrations foram aplicadas (tabela api_keys).</div>
+    </div>
+  );
 
   return (
     <div className="p-6">

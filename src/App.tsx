@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { SettingsProvider, useSettings } from './lib/settings';
 import Header from './components/Header';
 import { Toaster } from 'react-hot-toast';
 import AuthModal from './components/AuthModal';
@@ -12,6 +13,7 @@ function AppContent() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { settings } = useSettings();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCreateAd, setShowCreateAd] = useState(false);
   
@@ -82,6 +84,23 @@ function AppContent() {
 
   return (
     <>
+      {/* Apply dynamic SEO title and description if available */}
+      {settings.meta_title && (() => { document.title = settings.meta_title; })()}
+      {settings.meta_description && (() => {
+        let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.name = 'description';
+          document.head.appendChild(meta);
+        }
+        meta.content = settings.meta_description;
+      })()}
+
+      {/* Apply primary color to CSS variable */}
+      {settings.primary_color && (() => {
+        const root = document.documentElement;
+        root.style.setProperty('--vv-primary', settings.primary_color);
+      })()}
       <Header
         onSearch={handleSearch}
         onShowFavorites={handleShowFavorites}
@@ -90,7 +109,7 @@ function AppContent() {
         onCreateAd={handleCreateAd}
       />
       
-      <main className="min-h-screen bg-gray-50 pt-16 pb-12">
+      <main className="min-h-screen bg-gray-50 pt-0 pb-12">
         <Outlet />
       </main>
       
@@ -143,7 +162,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <SettingsProvider>
+        <AppContent />
+      </SettingsProvider>
     </AuthProvider>
   );
 }

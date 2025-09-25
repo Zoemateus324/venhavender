@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Filter, Search, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Category } from '../../types';
@@ -11,10 +11,12 @@ import { toast } from 'react-hot-toast';
 
 const AdsGridPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || '');
+  const sellerParam = searchParams.get('seller') || '';
   const [showFilters, setShowFilters] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
@@ -67,6 +69,7 @@ const AdsGridPage: React.FC = () => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
     if (selectedCategory) params.set('category', selectedCategory);
+    if (sellerParam) params.set('seller', sellerParam);
     if (location) params.set('location', location);
     if (priceRange.min) params.set('min_price', priceRange.min);
     if (priceRange.max) params.set('max_price', priceRange.max);
@@ -81,14 +84,57 @@ const AdsGridPage: React.FC = () => {
     setSearchParams({});
   };
 
-  const handleContactAd = (ad: any) => {
+  const handleContactAd = async (ad: any) => {
     if (!user) {
       setShowAuthModal(true);
       return;
     }
 
-    // Implement contact logic here
-    toast.success(`Contato iniciado para o anúncio: ${ad.title}`);
+    try {
+      // Evita mensagem para si mesmo
+      if (ad.user_id === user.id) {
+        toast('Este é o seu anúncio.', { icon: 'ℹ️' });
+        return;
+      }
+
+      // Procura conversa existente entre comprador e vendedor sobre este anúncio
+      const { data: existing, error: findError } = await supabase
+        .from('messages')
+        .select('id, sender_id, receiver_id')
+        .eq('ad_id', ad.id)
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${ad.user_id}),and(sender_id.eq.${ad.user_id},receiver_id.eq.${user.id})`)
+        .limit(1);
+
+      if (findError) throw findError;
+
+      if (existing && existing.length > 0) {
+        navigate(`/dashboard/messages/${existing[0].id}`);
+        return;
+      }
+
+      // Cria primeira mensagem e vai para o detalhe
+      const { data: inserted, error: insertError } = await supabase
+        .from('messages')
+        .insert([
+          {
+            message: 'Olá! Tenho interesse no seu anúncio.',
+            sender_id: user.id,
+            receiver_id: ad.user_id,
+            ad_id: ad.id,
+            read: false,
+          },
+        ])
+        .select('id')
+        .single();
+
+      if (insertError) throw insertError;
+
+      toast.success('Conversa iniciada');
+      navigate(`/dashboard/messages/${inserted.id}`);
+    } catch (error) {
+      console.error('Erro ao iniciar conversa:', error);
+      toast.error('Não foi possível iniciar a conversa.');
+    }
   };
 
   const handleFavoriteAd = async (ad: any) => {
@@ -240,6 +286,7 @@ const AdsGridPage: React.FC = () => {
       <AdGrid 
         searchQuery={searchQuery}
         categoryFilter={selectedCategory}
+        sellerFilter={sellerParam}
         onContactAd={handleContactAd}
         onFavoriteAd={handleFavoriteAd}
         favoriteIds={favoriteIds}

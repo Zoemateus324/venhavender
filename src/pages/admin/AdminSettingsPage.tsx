@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Save, RefreshCw, Settings, Mail, Bell, Shield, CreditCard, Globe, FileText } from 'lucide-react';
+import { useSettings } from '../../lib/settings';
 
 interface SystemSetting {
   id: string;
@@ -19,6 +20,7 @@ const AdminSettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const { reload } = useSettings();
 
   useEffect(() => {
     fetchSettings();
@@ -79,6 +81,7 @@ const AdminSettingsPage: React.FC = () => {
         if (error) throw error;
       }
       
+      await reload();
       toast.success('Configurações salvas com sucesso');
       setSaving(false);
     } catch (error) {

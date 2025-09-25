@@ -41,7 +41,7 @@ const MessagesPage: React.FC = () => {
         .from('messages')
         .select(`
           id, 
-          content,
+          message,
           created_at,
           read,
           sender:sender_id(*),
@@ -56,7 +56,15 @@ const MessagesPage: React.FC = () => {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMessages(data || []);
+      const mapped = (data || []).map((row: any) => ({
+        id: row.id,
+        content: row.message,
+        created_at: row.created_at,
+        read: row.read,
+        sender: row.sender,
+        ad: row.ad,
+      }));
+      setMessages(mapped);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
       toast.error('Erro ao carregar suas mensagens.');

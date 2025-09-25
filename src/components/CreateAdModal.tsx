@@ -16,6 +16,8 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
   const [categories, setCategories] = useState<Category[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
+  const [ownerId, setOwnerId] = useState<string>('');
+  const [allUsers, setAllUsers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -33,6 +35,8 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
   useEffect(() => {
     fetchCategories();
     fetchPlans();
+    // Se for admin, carregar usuários para poder criar anúncio em nome de alguém
+    fetchUsersForAdmin();
   }, []);
 
   const fetchCategories = async () => {
@@ -64,6 +68,20 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
     }
   };
 
+  const fetchUsersForAdmin = async () => {
+    try {
+      // evita erro se não autenticado ainda
+      if (!user || user.role !== 'admin') return;
+      const { data } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .order('created_at', { ascending: false });
+      setAllUsers(data || []);
+    } catch (error) {
+      // ignore
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -89,7 +107,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
       for (const file of filesToUpload) {
         const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-        const filePath = `image-ads/${user?.id}/${fileName}`;
+        const filePath = `image-ads/${ownerId || user?.id}/${fileName}`;
         const { error: uploadError } = await supabase.storage.from('ads').upload(filePath, file, { upsert: false });
         if (uploadError) throw uploadError;
         const { data } = supabase.storage.from('ads').getPublicUrl(filePath);
@@ -146,7 +164,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
       endDate.setDate(endDate.getDate() + getAdDuration());
 
       const adData = {
-        user_id: user.id,
+        user_id: ownerId || user.id,
         category_id: formData.category_id,
         type: formData.type,
         title: formData.title,
@@ -172,7 +190,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
       const planPrice = getAdPrice();
       if (planPrice > 0) {
         const paymentData = {
-          user_id: user.id,
+          user_id: ownerId || user.id,
           plan_id: formData.plan_id || null,
           amount: planPrice,
           payment_method: 'pending',
@@ -185,7 +203,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
       // Create request for footer ads
       if (formData.type === 'footer') {
         const requestData = {
-          user_id: user.id,
+          user_id: ownerId || user.id,
           ad_type: 'footer',
           duration_days: 30,
           materials: formData.footer_art_needed ? 'Arte necessária' : 'Arte própria',
@@ -260,6 +278,21 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           {/* Step 1: Basic Information */}
           {step === 1 && (
             <div className="space-y-6">
+              {user?.role === 'admin' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vendedor (criar em nome de)</label>
+                  <select
+                    value={ownerId}
+                    onChange={(e) => setOwnerId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Selecionar usuário… (padrão: meu usuário)</option>
+                    {allUsers.map(u => (
+                      <option key={u.id} value={u.id}>{u.name || u.email} — {u.email}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -7,6 +7,7 @@ import { Filter } from 'lucide-react';
 interface AdGridProps {
   searchQuery?: string;
   categoryFilter?: string;
+  sellerFilter?: string;
   onContactAd?: (ad: Ad) => void;
   onFavoriteAd?: (ad: Ad) => void;
   favoriteIds?: string[];
@@ -15,6 +16,7 @@ interface AdGridProps {
 export default function AdGrid({ 
   searchQuery, 
   categoryFilter, 
+  sellerFilter,
   onContactAd, 
   onFavoriteAd,
   favoriteIds = []
@@ -28,7 +30,7 @@ export default function AdGrid({
   useEffect(() => {
     fetchCategories();
     fetchAds();
-  }, [searchQuery, selectedCategory, sortBy]);
+  }, [searchQuery, selectedCategory, sortBy, sellerFilter]);
 
   // Atualiza categorias em tempo real quando houver mudanças na tabela
   useEffect(() => {
@@ -80,6 +82,11 @@ export default function AdGrid({
       // Apply category filter
       if (selectedCategory) {
         query = query.eq('category_id', selectedCategory);
+      }
+
+      // Apply seller filter
+      if (sellerFilter) {
+        query = query.eq('user_id', sellerFilter);
       }
 
       // Apply sorting

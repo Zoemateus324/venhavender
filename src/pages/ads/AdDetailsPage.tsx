@@ -464,7 +464,7 @@ const AdDetailsPage: React.FC = () => {
             </div>
             <div className="border-t pt-4">
               <button
-                onClick={handleContact}
+                onClick={() => navigate(`/ads?seller=${ad.user_id}`)}
                 className="w-full bg-gray-100 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-200 flex items-center justify-center gap-2"
               >
                 <MessageCircle size={18} />

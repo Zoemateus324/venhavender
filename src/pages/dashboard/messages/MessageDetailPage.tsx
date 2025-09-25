@@ -70,12 +70,7 @@ const MessageDetailPage: React.FC = () => {
       // Fetch the original message
       const { data: messageData, error: messageError } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender:sender_id(*),
-          receiver:receiver_id(*),
-          ad:ad_id(*)
-        `)
+        .select(`*, sender:sender_id(*), receiver:receiver_id(*), ad:ad_id(*)`)
         .eq('id', messageId)
         .single();
 
@@ -94,7 +89,7 @@ const MessageDetailPage: React.FC = () => {
       // Fetch the entire conversation thread
       const { data: threadData, error: threadError } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, message, created_at, sender_id, receiver_id')
         .or(`and(sender_id.eq.${messageData.sender_id},receiver_id.eq.${messageData.receiver_id}),and(sender_id.eq.${messageData.receiver_id},receiver_id.eq.${messageData.sender_id})`)
         .eq('ad_id', messageData.ad_id)
         .order('created_at', { ascending: true });
@@ -103,7 +98,7 @@ const MessageDetailPage: React.FC = () => {
 
       const formattedThread = threadData.map((msg: any) => ({
         id: msg.id,
-        content: msg.content,
+        content: msg.message,
         created_at: msg.created_at,
         sender_id: msg.sender_id,
         is_from_me: msg.sender_id === user?.id
@@ -128,7 +123,7 @@ const MessageDetailPage: React.FC = () => {
       setSending(true);
       
       const newMessage = {
-        content: replyContent.trim(),
+        message: replyContent.trim(),
         sender_id: user.id,
         receiver_id: originalMessage.sender_id,
         ad_id: originalMessage.ad_id,
@@ -148,7 +143,7 @@ const MessageDetailPage: React.FC = () => {
         ...thread,
         {
           id: data[0].id,
-          content: data[0].content,
+          content: data[0].message,
           created_at: data[0].created_at,
           sender_id: data[0].sender_id,
           is_from_me: true
