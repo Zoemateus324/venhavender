@@ -293,7 +293,7 @@ const PaymentsPage: React.FC = () => {
       )}
       
       {/* Footer Banner */}
-      <div className="mt-8 bg-orange-600 from-primary to-primary-dark rounded-lg shadow-lg p-6 text-white">
+      <div className="mt-8 bg-orange from-primary to-primary-dark rounded-lg shadow-lg p-6 text-white">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div>
             <h3 className="text-xl font-bold mb-2">Anúncio de Rodapé</h3>
@@ -301,7 +301,7 @@ const PaymentsPage: React.FC = () => {
           </div>
           <Link 
             to="/dashboard/ads/footer-request" 
-            className="px-6 py-2 bg-white text-black font-medium rounded-md hover:bg-gray-100 transition-colors"
+            className="px-6 py-2 bg-white text-primary font-medium rounded-md hover:bg-gray-100 transition-colors"
           >
             Solicitar Anúncio
           </Link>

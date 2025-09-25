@@ -1,24 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import FeaturedAds from '../components/FeaturedAds';
 import AdGrid from '../components/AdGrid';
 import FooterAds from '../components/FooterAds';
-import { supabase } from '../lib/supabase';
-import { Category } from '../types';
 import { TrendingUp, ShieldCheck, Clock } from 'lucide-react';
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    supabase
-      .from('categories')
-      .select('*')
-      .order('name')
-      .then(({ data }) => setCategories(data || []));
-  }, []);
+  
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,19 +73,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Categories tiles */}
-      <section className="mb-12">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          {categories.slice(0, 6).map((c) => (
-            <Link key={c.id} to={`/ads?category=${c.id}`} className="bg-white rounded-xl shadow p-6 text-center hover:shadow-lg">
-              <div className="text-gray-700 font-medium">{c.name}</div>
-            </Link>
-          ))}
-        </div>
-        <div className="text-center mt-4">
-          <Link to="/ads" className="text-blue-600 hover:underline">Ver todas as categorias →</Link>
-        </div>
-      </section>
+      {/* Categories tiles removed by request */}
 
       {/* Featured */}
       <section className="mb-12">

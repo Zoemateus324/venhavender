@@ -4,6 +4,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { supabase } from '../../../lib/supabase';
 import { PlusCircle, Edit, Copy, Trash, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import type { Category } from '../../../types';
 
 interface Ad {
   id: string;
@@ -23,10 +24,16 @@ const AdsListPage: React.FC = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [filter, setFilter] = useState<string>('all');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
 
   useEffect(() => {
     fetchAds();
-  }, [user, filter]);
+  }, [user, filter, categoryFilter]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const fetchAds = async () => {
     if (!user) return;
@@ -42,6 +49,10 @@ const AdsListPage: React.FC = () => {
         query = query.eq('status', filter);
       }
 
+      if (categoryFilter) {
+        query = query.eq('category_id', categoryFilter);
+      }
+
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -51,6 +62,20 @@ const AdsListPage: React.FC = () => {
       toast.error('Erro ao carregar seus anúncios.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
     }
   };
 
@@ -205,8 +230,8 @@ const AdsListPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2">
+      {/* <div className="mb-6">
+        <div className="flex flex-wrap gap-2 items-center">
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-md text-sm ${filter === 'all' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
@@ -231,8 +256,21 @@ const AdsListPage: React.FC = () => {
           >
             Expirados
           </button>
+
+          <div className="ml-auto w-full sm:w-64">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              <option value="">Todas as categorias</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      </div> */}
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
