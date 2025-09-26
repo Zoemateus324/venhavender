@@ -20,53 +20,53 @@ export default function HomePage() {
     <div className="container mx-auto px-4 py-8">
       {/* Hero */}
       <section className="mb-12">
-        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 rounded-2xl p-10 text-white shadow-lg">
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-orange-500 rounded-2xl p-6 sm:p-8 md:p-10 text-white shadow-lg">
           {/* Decorative blurred shapes */}
           <div className="pointer-events-none absolute -top-10 -left-10 w-72 h-72 bg-white/10 blur-3xl rounded-full" />
           <div className="pointer-events-none absolute -bottom-10 -right-10 w-80 h-80 bg-yellow-300/20 blur-3xl rounded-full" />
 
-          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-3 text-center">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-3 text-center">
             Encontre tudo o que<br/>
             <span className="text-yellow-300">você precisa</span>
           </h1>
-          <p className="text-lg md:text-xl opacity-90 mb-8 text-center">A maior plataforma de classificados do Brasil.</p>
-          <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-full p-2 flex items-center gap-2 shadow mx-auto">
+          <p className="text-base sm:text-lg md:text-xl opacity-90 mb-6 sm:mb-8 text-center">A maior plataforma de classificados do Brasil.</p>
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto px-2">
+            <div className="bg-white rounded-full p-1.5 sm:p-2 flex items-center gap-2 shadow mx-auto">
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="O que você está procurando? Ex: iPhone, apartamento, carro..."
-                className="flex-1 px-4 py-3 rounded-full text-gray-700 focus:outline-none"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-full text-gray-700 focus:outline-none text-sm sm:text-base"
               />
-              <button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-full font-medium">Buscar</button>
+              <button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white px-4 sm:px-6 py-2 rounded-full font-medium text-sm sm:text-base">Buscar</button>
             </div>
           </form>
-          <div className="mt-6 text-center">
-            <Link to="/dashboard/ads/create" className="inline-block bg-yellow-400 text-gray-900 font-semibold px-6 py-2 rounded-full hover:bg-yellow-300">Anunciar Grátis</Link>
+          <div className="mt-4 sm:mt-6 text-center px-2">
+            <Link to="/dashboard/ads/create" className="inline-block bg-yellow-400 text-gray-900 font-semibold px-5 sm:px-6 py-2 rounded-full hover:bg-yellow-300">Anunciar Grátis</Link>
             <span className="ml-3 opacity-90">ou navegue pelas <Link to="/ads" className="underline text-yellow-300">categorias populares</Link></span>
           </div>
 
           {/* Stat badges */}
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="mt-8 sm:mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto px-2">
             <div className="flex items-center gap-3 justify-center">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"><TrendingUp /></div>
               <div>
-                <div className="text-xl font-bold">10M+</div>
-                <div className="text-sm opacity-80">Anúncios Ativos</div>
+                <div className="text-lg sm:text-xl font-bold">10M+</div>
+                <div className="text-xs sm:text-sm opacity-80">Anúncios Ativos</div>
               </div>
             </div>
             <div className="flex items-center gap-3 justify-center">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"><ShieldCheck /></div>
               <div>
-                <div className="text-xl font-bold">100%</div>
-                <div className="text-sm opacity-80">Seguro & Confiável</div>
+                <div className="text-lg sm:text-xl font-bold">100%</div>
+                <div className="text-xs sm:text-sm opacity-80">Seguro & Confiável</div>
               </div>
             </div>
             <div className="flex items-center gap-3 justify-center">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"><Clock /></div>
               <div>
-                <div className="text-xl font-bold">24/7</div>
-                <div className="text-sm opacity-80">Suporte Online</div>
+                <div className="text-lg sm:text-xl font-bold">24/7</div>
+                <div className="text-xs sm:text-sm opacity-80">Suporte Online</div>
               </div>
             </div>
           </div>

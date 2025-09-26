@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Heart, MessageCircle, User, Plus, Menu, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -37,6 +37,18 @@ export default function Header({
       console.error('Error signing out:', error);
     }
   };
+
+  // Evita scroll do body quando o menu mobile está aberto
+  useEffect(() => {
+    if (showMobileMenu) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMobileMenu]);
 
   return (
     <>

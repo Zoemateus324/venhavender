@@ -230,7 +230,7 @@ const AdsListPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      {/* <div className="mb-6">
+      <div className="mb-6">
         <div className="flex flex-wrap gap-2 items-center">
           <button
             onClick={() => setFilter('all')}
@@ -270,7 +270,7 @@ const AdsListPage: React.FC = () => {
             </select>
           </div>
         </div>
-      </div> */}
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center h-64">

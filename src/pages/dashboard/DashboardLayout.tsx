@@ -46,7 +46,7 @@ const DashboardLayout: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-md">
+      <div className="hidden md:block w-64 bg-white shadow-md flex-shrink-0">
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold text-primary">Venha Vender</h2>
           <p className="text-sm text-gray-500">{user.name}</p>
@@ -81,6 +81,16 @@ const DashboardLayout: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="p-6">
+          {/* Mobile nav */}
+          <div className="md:hidden mb-4">
+            <div className="flex whitespace-nowrap overflow-x-auto gap-2 pb-1 -mx-2 px-2">
+              {menuItems.map((item) => (
+                <Link key={item.path} to={item.path} className={`px-3 py-2 rounded-md text-sm border ${isActive(item.path) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-gray-200'}`}>
+                  <span className="inline-flex items-center gap-1">{item.icon}{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
           <Outlet />
         </div>
       </div>
