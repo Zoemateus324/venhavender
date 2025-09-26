@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import FeaturedAds from '../components/FeaturedAds';
 import AdGrid from '../components/AdGrid';
 import FooterAds from '../components/FooterAds';
+import SpecialAdsCarousel from '../components/SpecialAdsCarousel';
 import { TrendingUp, ShieldCheck, Clock } from 'lucide-react';
 
 export default function HomePage() {
@@ -75,11 +76,16 @@ export default function HomePage() {
 
       {/* Categories tiles removed by request */}
 
-      {/* Featured */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Anúncios em Destaque</h2>
-        <FeaturedAds />
-      </section>
+          {/* Special Ads Carousel */}
+          <section className="mb-12">
+            <SpecialAdsCarousel onAdClick={(ad) => navigate(`/ads/${ad.id}`)} />
+          </section>
+
+          {/* Featured */}
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Anúncios em Destaque</h2>
+            <FeaturedAds />
+          </section>
 
       <section className="mb-12">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Anúncios Recentes</h2>

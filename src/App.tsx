@@ -109,7 +109,7 @@ function AppContent() {
         onCreateAd={handleCreateAd}
       />
       
-      <main className="min-h-screen bg-gray-50 pt-0 pb-12">
+      <main className="min-h-screen bg-gray-50 pt-0">
         <Outlet />
       </main>
       

@@ -122,13 +122,13 @@ const MessagesPage: React.FC = () => {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-md text-sm ${filter === 'all' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
+            className={`px-4 py-2 rounded-md text-sm ${filter === 'all' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700 hover:text-orange-600 active:text-orange-600 focus:text-orange-600'}`}
           >
             Todas
           </button>
           <button
             onClick={() => setFilter('unread')}
-            className={`px-4 py-2 rounded-md text-sm ${filter === 'unread' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
+            className={`px-4 py-2 rounded-md text-sm ${filter === 'unread' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700 hover:text-orange-600 active:text-orange-600 focus:text-orange-600'}`}
           >
             Não lidas
           </button>

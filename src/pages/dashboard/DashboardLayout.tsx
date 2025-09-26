@@ -58,7 +58,7 @@ const DashboardLayout: React.FC = () => {
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`flex items-center px-4 py-3 text-sm ${isActive(item.path) ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                  className={`flex items-center px-4 py-3 text-sm ${isActive(item.path) ? 'bg-orange-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-orange-600'}`}
                 >
                   <span className="mr-3">{item.icon}</span>
                   {item.label}
@@ -68,7 +68,7 @@ const DashboardLayout: React.FC = () => {
             <li>
               <button
                 onClick={handleSignOut}
-                className="flex items-center w-full px-4 py-3 text-sm text-gray-600 hover:bg-gray-100"
+                className="flex items-center w-full px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 hover:text-orange-600"
               >
                 <span className="mr-3"><LogOut size={20} /></span>
                 Sair
@@ -85,7 +85,7 @@ const DashboardLayout: React.FC = () => {
           <div className="md:hidden mb-4">
             <div className="flex whitespace-nowrap overflow-x-auto gap-2 pb-1 -mx-2 px-2">
               {menuItems.map((item) => (
-                <Link key={item.path} to={item.path} className={`px-3 py-2 rounded-md text-sm border ${isActive(item.path) ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-gray-200'}`}>
+                <Link key={item.path} to={item.path} className={`px-3 py-2 rounded-md text-sm border ${isActive(item.path) ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-200 hover:text-orange-600 active:text-orange-600 focus:text-orange-600'}`}>
                   <span className="inline-flex items-center gap-1">{item.icon}{item.label}</span>
                 </Link>
               ))}

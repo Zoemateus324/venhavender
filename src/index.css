@@ -9,3 +9,57 @@
 /* Utility to use CSS variable where Tailwind classes are not used */
 .vv-primary-bg { background-color: var(--vv-primary); }
 .vv-primary-text { color: var(--vv-primary); }
+
+/* Ensure contrast on white buttons/links in active/selected states */
+button.bg-white, a.bg-white {
+  color: #1f2937 !important; /* gray-800 */
+}
+button.bg-white:active, button.bg-white:focus,
+a.bg-white:active, a.bg-white:focus {
+  color: #111827 !important; /* gray-900 */
+}
+button.bg-white:hover, a.bg-white:hover {
+  color: #111827 !important; /* gray-900 */
+}
+/* Fallback when utility classes collide (e.g., bg-white text-white) */
+.bg-white.text-white {
+  color: #1f2937 !important;
+}
+/* Force text color for white background buttons */
+.bg-white {
+  color: #1f2937 !important;
+}
+.bg-white:active, .bg-white:focus, .bg-white:hover {
+  color: #111827 !important;
+}
+
+/* Fix all white background elements with text contrast issues */
+button, a, input, select, textarea {
+  color: inherit;
+}
+button:active, button:focus, button:hover,
+a:active, a:focus, a:hover {
+  color: inherit;
+}
+
+/* Specific fixes for common button patterns */
+button[class*="bg-white"], a[class*="bg-white"] {
+  color: #1f2937 !important;
+}
+button[class*="bg-white"]:active, button[class*="bg-white"]:focus, button[class*="bg-white"]:hover,
+a[class*="bg-white"]:active, a[class*="bg-white"]:focus, a[class*="bg-white"]:hover {
+  color: #111827 !important;
+}
+
+/* Fix for buttons with border and white background */
+button[class*="border"][class*="bg-white"], a[class*="border"][class*="bg-white"] {
+  color: #1f2937 !important;
+}
+button[class*="border"][class*="bg-white"]:active, 
+button[class*="border"][class*="bg-white"]:focus, 
+button[class*="border"][class*="bg-white"]:hover,
+a[class*="border"][class*="bg-white"]:active, 
+a[class*="border"][class*="bg-white"]:focus, 
+a[class*="border"][class*="bg-white"]:hover {
+  color: #111827 !important;
+}

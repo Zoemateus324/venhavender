@@ -215,7 +215,7 @@ const SettingsPage: React.FC = () => {
               <p className="text-gray-500 text-sm mb-2">Para alterar sua senha, clique no botão abaixo e siga as instruções enviadas por email.</p>
               <button
                 type="button"
-                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:text-orange-600 active:text-orange-600 focus:text-orange-600 transition-colors"
                 onClick={() => toast.success('Link para redefinição de senha enviado para seu email!')}
               >
                 Solicitar alteração de senha

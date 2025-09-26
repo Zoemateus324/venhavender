@@ -12,7 +12,8 @@ import {
   BarChart3,
   Bell,
   LineChart,
-  Cog
+  Cog,
+  Star
 } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
@@ -42,6 +43,7 @@ const AdminLayout: React.FC = () => {
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
     { icon: <FileText size={20} />, label: 'Anúncios', path: '/admin/ads' },
+    { icon: <Star size={20} />, label: 'Anúncios Especiais', path: '/admin/special-ads' },
     { icon: <Users size={20} />, label: 'Usuários', path: '/admin/users' },
     { icon: <BarChart3 size={20} />, label: 'Planos', path: '/admin/plans' },
     { icon: <CreditCard size={20} />, label: 'Pagamentos', path: '/admin/payments' },

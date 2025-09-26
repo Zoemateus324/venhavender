@@ -234,25 +234,25 @@ const AdsListPage: React.FC = () => {
         <div className="flex flex-wrap gap-2 items-center">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-md text-sm ${filter === 'all' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
+            className={`px-4 py-2 rounded-md text-sm ${filter === 'all' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700 hover:text-orange-600 active:text-orange-600 focus:text-orange-600'}`}
           >
             Todos
           </button>
           <button
             onClick={() => setFilter('active')}
-            className={`px-4 py-2 rounded-md text-sm ${filter === 'active' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
+            className={`px-4 py-2 rounded-md text-sm ${filter === 'active' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700 hover:text-orange-600 active:text-orange-600 focus:text-orange-600'}`}
           >
             Ativos
           </button>
           <button
             onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-md text-sm ${filter === 'pending' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
+            className={`px-4 py-2 rounded-md text-sm ${filter === 'pending' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700 hover:text-orange-600 active:text-orange-600 focus:text-orange-600'}`}
           >
             Em análise
           </button>
           <button
             onClick={() => setFilter('expired')}
-            className={`px-4 py-2 rounded-md text-sm ${filter === 'expired' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
+            className={`px-4 py-2 rounded-md text-sm ${filter === 'expired' ? 'bg-primary text-white' : 'bg-white border border-gray-300 text-gray-700 hover:text-orange-600 active:text-orange-600 focus:text-orange-600'}`}
           >
             Expirados
           </button>

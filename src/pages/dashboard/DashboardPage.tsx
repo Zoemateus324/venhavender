@@ -160,17 +160,17 @@ const DashboardPage: React.FC = () => {
           <Link to="/dashboard/ads/create" className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
             <PlusCircle size={18} className="mr-2" /> Criar Anúncio
           </Link>
-          <Link to="/dashboard/settings" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+          <Link to="/dashboard/settings" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:text-orange-600 active:text-orange-600 focus:text-orange-600 transition-colors">
             Atualizar Perfil
           </Link>
-          <Link to="/dashboard/messages" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+          <Link to="/dashboard/messages" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:text-orange-600 active:text-orange-600 focus:text-orange-600 transition-colors">
             Ver Mensagens {unreadMessages.length > 0 && (
               <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {unreadMessages.length}
               </span>
             )}
           </Link>
-          <Link to="/dashboard/payments" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+          <Link to="/dashboard/payments" className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:text-orange-600 active:text-orange-600 focus:text-orange-600 transition-colors">
             Gerenciar Plano
           </Link>
         </div>

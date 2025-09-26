@@ -84,7 +84,7 @@ export default function FeaturedAds({ onContactAd, onFavoriteAd, favoriteIds = [
           <div className="flex items-center gap-2">
             <button
               onClick={prevSlide}
-              className="p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow text-gray-600 hover:text-orange-600"
+              className="p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow text-gray-600 hover:text-orange-600 active:text-orange-600 focus:text-orange-600"
             >
               <ChevronLeft size={20} />
             </button>
@@ -93,7 +93,7 @@ export default function FeaturedAds({ onContactAd, onFavoriteAd, favoriteIds = [
             </span>
             <button
               onClick={nextSlide}
-              className="p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow text-gray-600 hover:text-orange-600"
+              className="p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow text-gray-600 hover:text-orange-600 active:text-orange-600 focus:text-orange-600"
             >
               <ChevronRight size={20} />
             </button>

@@ -293,15 +293,15 @@ const PaymentsPage: React.FC = () => {
       )}
       
       {/* Footer Banner */}
-      <div className="mt-8 bg-orange from-primary to-primary-dark rounded-lg shadow-lg p-6 text-white">
+      <div className="mt-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div>
-            <h3 className="text-xl font-bold mb-2">Anúncio de Rodapé</h3>
-            <p className="mb-4 md:mb-0">Destaque seu anúncio no rodapé de todas as páginas por apenas R$ 99,90 por semana!</p>
+            <h3 className="text-xl font-bold mb-2 text-white">Anúncio de Rodapé</h3>
+            <p className="mb-4 md:mb-0 text-white">Destaque seu anúncio no rodapé de todas as páginas por apenas R$ 99,90 por semana!</p>
           </div>
           <Link 
             to="/dashboard/ads/footer-request" 
-            className="px-6 py-2 bg-white text-primary font-medium rounded-md hover:bg-gray-100 transition-colors"
+            className="px-6 py-2 bg-white text-orange-600 font-medium rounded-md hover:bg-gray-100 hover:text-orange-700 transition-colors"
           >
             Solicitar Anúncio
           </Link>

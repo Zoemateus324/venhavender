@@ -20,6 +20,7 @@ import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
 import AdminApiKeysPage from './pages/admin/AdminApiKeysPage';
 import AdminReportsPage from './pages/admin/AdminReportsPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
+import AdminSpecialAdsPage from './pages/admin/AdminSpecialAdsPage';
 import PaymentPage from './pages/payment/PaymentPage';
 import RenewPlanPage from './pages/payment/RenewPlanPage';
 import SupportPage from './pages/support/SupportPage';
@@ -101,6 +102,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <AdminDashboardPage /> },
           { path: 'ads', element: <AdminAdsPage /> },
+          { path: 'special-ads', element: <AdminSpecialAdsPage /> },
           { path: 'users', element: <AdminUsersPage /> },
           { path: 'plans', element: <AdminPlansPage /> },
           { path: 'payments', element: <AdminPaymentsPage /> },
