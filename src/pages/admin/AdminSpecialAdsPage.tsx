@@ -50,7 +50,12 @@ const AdminSpecialAdsPage: React.FC = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .rpc('get_special_ads_with_permissions');
+        .from('special_ads')
+        .select(`
+          *,
+          created_by_user:users!created_by(name, email)
+        `)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setSpecialAds(data || []);
@@ -381,29 +386,20 @@ const AdminSpecialAdsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
-                        {ad.can_edit && (
-                          <>
-                            <button
-                              onClick={() => handleEdit(ad)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Editar"
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(ad.id)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Excluir"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </>
-                        )}
-                        {!ad.can_edit && (
-                          <span className="text-gray-400 text-xs">
-                            Sem permissão
-                          </span>
-                        )}
+                        <button
+                          onClick={() => handleEdit(ad)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                          title="Editar"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(ad.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     </td>
                   </tr>

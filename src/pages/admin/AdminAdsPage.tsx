@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { Eye, Edit, Trash2, CheckCircle, XCircle, Filter, Search, MoreHorizontal, AlertTriangle } from 'lucide-react';
+import { Eye, Edit, Trash2, CheckCircle, XCircle, Filter, Search, MoreHorizontal, AlertTriangle, FileText, Upload, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 interface Ad {
   id: string;
   title: string;
+  description: string;
   price: number;
   status: 'pending' | 'active' | 'expired' | 'rejected';
   created_at: string;
   user_id: string;
+  category_id: string;
+  photos: string[];
   user?: {
     id: string;
     name: string;
@@ -42,6 +45,17 @@ const AdminAdsPage: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const pageSize = 20;
   const [total, setTotal] = useState<number>(0);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [editingAd, setEditingAd] = useState<Ad | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: '',
+    price: 0,
+    category_id: '',
+    status: 'active'
+  });
+  const [editPhotos, setEditPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,11 +92,14 @@ const AdminAdsPage: React.FC = () => {
         .select(`
           id,
           title,
+          description,
           price,
           status,
           created_at,
           views,
           user_id,
+          category_id,
+          photos,
           user:user_id (id, name, email),
           category:category_id (id, name)
         `)
@@ -184,6 +201,88 @@ const AdminAdsPage: React.FC = () => {
       console.error('Error deleting ad:', error);
       toast.error('Erro ao excluir anúncio');
     }
+  };
+
+  const handleEditAd = (ad: Ad) => {
+    setEditingAd(ad);
+    setEditFormData({
+      title: ad.title,
+      description: ad.description,
+      price: ad.price,
+      category_id: ad.category_id,
+      status: ad.status
+    });
+    setEditPhotos(ad.photos || []);
+    setShowEditModal(true);
+    setShowActionMenu(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAd) return;
+
+    try {
+      const { error } = await supabase
+        .from('ads')
+        .update({
+          title: editFormData.title,
+          description: editFormData.description,
+          price: editFormData.price,
+          category_id: editFormData.category_id,
+          status: editFormData.status,
+          photos: editPhotos
+        })
+        .eq('id', editingAd.id);
+
+      if (error) throw error;
+      toast.success('Anúncio atualizado com sucesso!');
+      setShowEditModal(false);
+      setEditingAd(null);
+      fetchAds();
+    } catch (error) {
+      console.error('Erro ao atualizar anúncio:', error);
+      toast.error('Erro ao atualizar anúncio.');
+    }
+  };
+
+  const handleImageUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+    
+    setUploading(true);
+    const newPhotos: string[] = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `ads/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('ad-images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+          .from('ad-images')
+          .getPublicUrl(filePath);
+
+        newPhotos.push(data.publicUrl);
+      }
+
+      setEditPhotos([...editPhotos, ...newPhotos]);
+      toast.success('Imagens adicionadas com sucesso!');
+    } catch (error) {
+      console.error('Erro ao fazer upload das imagens:', error);
+      toast.error('Erro ao fazer upload das imagens.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setEditPhotos(editPhotos.filter((_, i) => i !== index));
   };
 
   const handleBulkAction = async (action: 'approve' | 'reject' | 'delete') => {
@@ -519,12 +618,9 @@ const AdminAdsPage: React.FC = () => {
                                 <Eye size={16} className="mr-2" />
                                 Ver anúncio
                               </button>
-                              {ad.user_id === user?.id && (
+                              {(ad.user_id === user?.id || user?.role === 'admin') && (
                                 <button
-                                  onClick={() => {
-                                    navigate(`/dashboard/ads/${ad.id}/edit`);
-                                    setShowActionMenu(null);
-                                  }}
+                                  onClick={() => handleEditAd(ad)}
                                   className="flex items-center px-4 py-2 text-sm text-blue-700 hover:bg-gray-100 w-full text-left"
                                 >
                                   <Edit size={16} className="mr-2" />
@@ -599,6 +695,190 @@ const AdminAdsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && editingAd && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Editar Anúncio</h2>
+            
+            <form onSubmit={handleSaveEdit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                  <input 
+                    type="text"
+                    value={editFormData.title} 
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" 
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    value={editFormData.price} 
+                    onChange={(e) => setEditFormData({ ...editFormData, price: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" 
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
+                  <select 
+                    value={editFormData.category_id} 
+                    onChange={(e) => setEditFormData({ ...editFormData, category_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    required
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select 
+                    value={editFormData.status} 
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="active">Ativo</option>
+                    <option value="pending">Pendente</option>
+                    <option value="rejected">Rejeitado</option>
+                    <option value="expired">Expirado</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Localização</label>
+                  <input 
+                    type="text"
+                    value={editFormData.location} 
+                    onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="Cidade, Estado"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefone de Contato</label>
+                  <input 
+                    type="tel"
+                    value={editFormData.contact_phone} 
+                    onChange={(e) => setEditFormData({ ...editFormData, contact_phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email de Contato</label>
+                  <input 
+                    type="email"
+                    value={editFormData.contact_email} 
+                    onChange={(e) => setEditFormData({ ...editFormData, contact_email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="seu@email.com"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Descrição *</label>
+                  <textarea 
+                    rows={4}
+                    value={editFormData.description} 
+                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" 
+                    required
+                    placeholder="Descreva detalhadamente o que você está vendendo..."
+                  />
+                </div>
+              </div>
+
+              {/* Seção de Imagens */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Imagens do Anúncio</h3>
+                
+                {/* Upload de Imagens */}
+                <div className="mb-6">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label
+                      htmlFor="image-upload"
+                      className="cursor-pointer flex flex-col items-center justify-center py-4"
+                    >
+                      <Upload size={32} className="text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600">
+                        {uploading ? 'Fazendo upload...' : 'Clique para adicionar imagens'}
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">
+                        PNG, JPG, WEBP até 10MB cada
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Preview das Imagens */}
+                {editPhotos.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {editPhotos.map((photo, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={photo}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <button 
+                  type="button" 
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingAd(null);
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
