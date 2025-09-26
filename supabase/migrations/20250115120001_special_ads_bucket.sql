@@ -4,7 +4,7 @@ VALUES (
   'ads_especiais',
   'ads_especiais',
   true,
-  5242880, -- 5MB limit
+  10485760, -- 10MB limit (aumentado para imagens de alta qualidade)
   ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 ) ON CONFLICT (id) DO NOTHING;
 

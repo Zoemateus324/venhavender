@@ -95,11 +95,11 @@ export default function SpecialAdsCarousel({ onAdClick }: SpecialAdsCarouselProp
               <div 
                 className="relative cursor-pointer group"
                 onClick={() => onAdClick?.(ad)}
-                style={{ aspectRatio: '807/376' }}
+                style={{ aspectRatio: '1135/350' }}
               >
-                {ad.image_url ? (
+                {(ad.large_image_url || ad.image_url) ? (
                   <img
-                    src={ad.image_url}
+                    src={ad.large_image_url || ad.image_url}
                     alt={ad.title}
                     className="w-full h-full object-cover rounded-lg"
                   />

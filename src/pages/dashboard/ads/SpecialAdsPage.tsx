@@ -12,20 +12,16 @@ interface SpecialAd {
   status: 'active' | 'inactive' | 'pending';
   created_at: string;
   expires_at: string;
-  image_url?: string; // For backward compatibility
+  image_url?: string;
   small_image_url?: string;
   large_image_url?: string;
   created_by: string;
-  created_by_user?: {
-    name: string;
-    email: string;
-  };
   views: number;
   clicks: number;
   can_edit?: boolean;
 }
 
-const AdminSpecialAdsPage: React.FC = () => {
+const SpecialAdsPage: React.FC = () => {
   const { user } = useAuth();
   const [specialAds, setSpecialAds] = useState<SpecialAd[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +49,9 @@ const AdminSpecialAdsPage: React.FC = () => {
         .rpc('get_special_ads_with_permissions');
 
       if (error) throw error;
-      setSpecialAds(data || []);
+      // Filter only ads created by current user
+      const userAds = (data || []).filter(ad => ad.created_by === user?.id);
+      setSpecialAds(userAds);
     } catch (error) {
       console.error('Erro ao carregar anúncios especiais:', error);
       toast.error('Erro ao carregar anúncios especiais.');
@@ -191,8 +189,24 @@ const AdminSpecialAdsPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+  const getStatusBadge = (status: string) => {
+    const badges = {
+      active: 'bg-green-100 text-green-800',
+      inactive: 'bg-gray-100 text-gray-800',
+      pending: 'bg-yellow-100 text-yellow-800'
+    };
+    
+    const labels = {
+      active: 'Ativo',
+      inactive: 'Inativo',
+      pending: 'Pendente'
+    };
+
+    return (
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${badges[status as keyof typeof badges]}`}>
+        {labels[status as keyof typeof labels]}
+      </span>
+    );
   };
 
   const formatCurrency = (value: number) => {
@@ -202,37 +216,29 @@ const AdminSpecialAdsPage: React.FC = () => {
     }).format(value);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">Ativo</span>;
-      case 'inactive':
-        return <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">Inativo</span>;
-      case 'pending':
-        return <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">Pendente</span>;
-      default:
-        return <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">{status}</span>;
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Anúncios Especiais</h1>
-          <p className="text-gray-600">Gerencie anúncios de rodapé e outros anúncios especiais</p>
+          <h1 className="text-2xl font-bold text-gray-900">Meus Anúncios Especiais</h1>
+          <p className="text-gray-600">Gerencie seus anúncios especiais para o carrossel</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors flex items-center gap-2"
+          className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
         >
-          <Plus size={20} />
+          <Plus size={20} className="mr-2" />
           Criar Anúncio Especial
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
@@ -327,9 +333,6 @@ const AdminSpecialAdsPage: React.FC = () => {
                       <div>
                         <div className="text-sm font-medium text-gray-900">{ad.title}</div>
                         <div className="text-sm text-gray-500">{ad.description}</div>
-                        {ad.created_by_user && (
-                          <div className="text-xs text-gray-400">Criado por: {ad.created_by_user.name}</div>
-                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -381,29 +384,20 @@ const AdminSpecialAdsPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
-                        {ad.can_edit && (
-                          <>
-                            <button
-                              onClick={() => handleEdit(ad)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Editar"
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(ad.id)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Excluir"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </>
-                        )}
-                        {!ad.can_edit && (
-                          <span className="text-gray-400 text-xs">
-                            Sem permissão
-                          </span>
-                        )}
+                        <button
+                          onClick={() => handleEdit(ad)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                          title="Editar"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(ad.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -439,19 +433,6 @@ const AdminSpecialAdsPage: React.FC = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Descrição
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    rows={3}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Preço (R$)
                   </label>
                   <input
@@ -460,6 +441,19 @@ const AdminSpecialAdsPage: React.FC = () => {
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    required
+                  />
+                </div>
+                
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Descrição
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    rows={3}
                     required
                   />
                 </div>
@@ -627,4 +621,4 @@ const AdminSpecialAdsPage: React.FC = () => {
   );
 };
 
-export default AdminSpecialAdsPage;
+export default SpecialAdsPage;

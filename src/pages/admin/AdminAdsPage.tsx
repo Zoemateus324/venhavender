@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Eye, Edit, Trash2, CheckCircle, XCircle, Filter, Search, MoreHorizontal, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Ad {
   id: string;
@@ -10,6 +11,7 @@ interface Ad {
   price: number;
   status: 'pending' | 'active' | 'expired' | 'rejected';
   created_at: string;
+  user_id: string;
   user?: {
     id: string;
     name: string;
@@ -24,6 +26,7 @@ interface Ad {
 }
 
 const AdminAdsPage: React.FC = () => {
+  const { user } = useAuth();
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +82,7 @@ const AdminAdsPage: React.FC = () => {
           status,
           created_at,
           views,
+          user_id,
           user:user_id (id, name, email),
           category:category_id (id, name)
         `)
@@ -93,6 +97,7 @@ const AdminAdsPage: React.FC = () => {
       const { data, error } = await query;
 
       if (error) throw error;
+
 
       // Fetch report counts for each ad
       const adsWithReports = await Promise.all(
@@ -514,6 +519,18 @@ const AdminAdsPage: React.FC = () => {
                                 <Eye size={16} className="mr-2" />
                                 Ver anúncio
                               </button>
+                              {ad.user_id === user?.id && (
+                                <button
+                                  onClick={() => {
+                                    navigate(`/dashboard/ads/${ad.id}/edit`);
+                                    setShowActionMenu(null);
+                                  }}
+                                  className="flex items-center px-4 py-2 text-sm text-blue-700 hover:bg-gray-100 w-full text-left"
+                                >
+                                  <Edit size={16} className="mr-2" />
+                                  Editar anúncio
+                                </button>
+                              )}
                               {ad.status !== 'active' && (
                                 <button
                                   onClick={() => {
