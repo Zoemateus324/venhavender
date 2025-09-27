@@ -79,31 +79,41 @@ const AdminReportsPage: React.FC = () => {
 
   const fetchStatCards = async () => {
     try {
-      // In a real app, these would be actual database queries
-      // For now, we'll use mock data
+      console.log('Fetching stat cards...');
       
       // Get total users
       const { count: totalUsers, error: usersError } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true });
       
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('Error fetching total users:', usersError);
+        throw usersError;
+      }
       
       // Get new users in period
       const periodStart = getPeriodStartDate();
+      console.log('Period start:', periodStart.toISOString());
+      
       const { count: newUsers, error: newUsersError } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', periodStart.toISOString());
       
-      if (newUsersError) throw newUsersError;
+      if (newUsersError) {
+        console.error('Error fetching new users:', newUsersError);
+        throw newUsersError;
+      }
       
       // Get total ads
       const { count: totalAds, error: adsError } = await supabase
         .from('ads')
         .select('*', { count: 'exact', head: true });
       
-      if (adsError) throw adsError;
+      if (adsError) {
+        console.error('Error fetching total ads:', adsError);
+        throw adsError;
+      }
       
       // Get new ads in period
       const { count: newAds, error: newAdsError } = await supabase
@@ -111,7 +121,10 @@ const AdminReportsPage: React.FC = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', periodStart.toISOString());
       
-      if (newAdsError) throw newAdsError;
+      if (newAdsError) {
+        console.error('Error fetching new ads:', newAdsError);
+        throw newAdsError;
+      }
       
       // Calculate previous period for comparison
       const previousPeriodStart = new Date(periodStart);
@@ -202,6 +215,7 @@ const AdminReportsPage: React.FC = () => {
 
   const fetchAdsChartData = async () => {
     try {
+      console.log('Fetching ads chart data...');
       const periodStart = getPeriodStartDate();
       const labels = generateTimeLabels();
       const buckets = createBuckets(labels);
@@ -211,7 +225,10 @@ const AdminReportsPage: React.FC = () => {
         .select('id, created_at')
         .gte('created_at', periodStart.toISOString());
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching ads chart data:', error);
+        throw error;
+      }
 
       (data || []).forEach((row: any) => {
         const idx = bucketIndex(new Date(row.created_at), dateRange, labels);
@@ -230,6 +247,8 @@ const AdminReportsPage: React.FC = () => {
           }
         ]
       });
+      
+      console.log('Ads chart data set:', { labels, buckets });
     } catch (error) {
       console.error('Error fetching ads chart data:', error);
     }
@@ -237,6 +256,7 @@ const AdminReportsPage: React.FC = () => {
 
   const fetchUsersChartData = async () => {
     try {
+      console.log('Fetching users chart data...');
       const periodStart = getPeriodStartDate();
       const labels = generateTimeLabels();
       const buckets = createBuckets(labels);
@@ -246,7 +266,10 @@ const AdminReportsPage: React.FC = () => {
         .select('id, created_at')
         .gte('created_at', periodStart.toISOString());
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching users chart data:', error);
+        throw error;
+      }
 
       (data || []).forEach((row: any) => {
         const idx = bucketIndex(new Date(row.created_at), dateRange, labels);
@@ -265,6 +288,8 @@ const AdminReportsPage: React.FC = () => {
           }
         ]
       });
+      
+      console.log('Users chart data set:', { labels, buckets });
     } catch (error) {
       console.error('Error fetching users chart data:', error);
     }
@@ -272,12 +297,17 @@ const AdminReportsPage: React.FC = () => {
 
   const fetchCategoryDistribution = async () => {
     try {
+      console.log('Fetching category distribution...');
       // Conta anúncios ativos por categoria
       const { data: ads, error: adsErr } = await supabase
         .from('ads')
         .select('category:category_id (id, name)')
         .eq('status', 'active');
-      if (adsErr) throw adsErr;
+      
+      if (adsErr) {
+        console.error('Error fetching category distribution:', adsErr);
+        throw adsErr;
+      }
 
       const counts = new Map<string, { name: string; count: number }>();
       (ads || []).forEach((row: any) => {
@@ -291,12 +321,24 @@ const AdminReportsPage: React.FC = () => {
       const data = Array.from(counts.values()).map((v) => v.count);
       const backgroundColor = labels.map((_, i) => defaultColors[i % defaultColors.length]);
 
-      setCategoryDistribution({
-        labels,
-        datasets: [
-          { label: 'Distribuição por Categoria', data, backgroundColor, borderWidth: 1 },
-        ],
-      });
+      // Se não há dados, criar dados de exemplo
+      if (labels.length === 0) {
+        setCategoryDistribution({
+          labels: ['Sem dados'],
+          datasets: [
+            { label: 'Distribuição por Categoria', data: [1], backgroundColor: ['#e5e7eb'], borderWidth: 1 },
+          ],
+        });
+      } else {
+        setCategoryDistribution({
+          labels,
+          datasets: [
+            { label: 'Distribuição por Categoria', data, backgroundColor, borderWidth: 1 },
+          ],
+        });
+      }
+      
+      console.log('Category distribution set:', { labels, data });
     } catch (error) {
       console.error('Error fetching category distribution:', error);
     }
@@ -304,6 +346,7 @@ const AdminReportsPage: React.FC = () => {
 
   const fetchRevenueData = async () => {
     try {
+      console.log('Fetching revenue data...');
       const periodStart = getPeriodStartDate();
       const labels = generateTimeLabels();
       const buckets = createBuckets(labels, 0); // numeric sums
@@ -314,7 +357,10 @@ const AdminReportsPage: React.FC = () => {
         .gte('created_at', periodStart.toISOString())
         .eq('status', 'approved');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching revenue data:', error);
+        throw error;
+      }
 
       (data || []).forEach((row: any) => {
         const when = new Date(row.payment_date || row.created_at);
@@ -334,6 +380,8 @@ const AdminReportsPage: React.FC = () => {
           }
         ]
       });
+      
+      console.log('Revenue data set:', { labels, buckets });
     } catch (error) {
       console.error('Error fetching revenue data:', error);
     }
@@ -681,7 +729,25 @@ export default AdminReportsPage;
 
 // Simple inline charts without external libs
 function SimpleBarChart({ data }: { data: ChartData }) {
+  if (!data || !data.datasets || !data.datasets[0] || !data.datasets[0].data) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-500">Sem dados para exibir</p>
+      </div>
+    );
+  }
+  
   const max = Math.max(1, ...data.datasets[0].data);
+  const hasData = data.datasets[0].data.some(v => v > 0);
+  
+  if (!hasData) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-500">Nenhum dado no período selecionado</p>
+      </div>
+    );
+  }
+  
   return (
     <div className="h-full flex items-end gap-2 p-4 bg-gray-50 rounded-lg">
       {data.datasets[0].data.map((v, i) => (
@@ -699,9 +765,27 @@ function SimpleBarChart({ data }: { data: ChartData }) {
 }
 
 function SimpleLineChart({ data }: { data: ChartData }) {
+  if (!data || !data.datasets || !data.datasets[0] || !data.datasets[0].data) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-500">Sem dados para exibir</p>
+      </div>
+    );
+  }
+  
   // Render as bar-like minimal chart for simplicity
   const color = Array.isArray(data.datasets[0].borderColor) ? '#2563eb' : (data.datasets[0].borderColor as string) || '#2563eb';
   const max = Math.max(1, ...data.datasets[0].data);
+  const hasData = data.datasets[0].data.some(v => v > 0);
+  
+  if (!hasData) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-500">Nenhum dado no período selecionado</p>
+      </div>
+    );
+  }
+  
   return (
     <div className="h-full flex items-end gap-1 p-4 bg-gray-50 rounded-lg">
       {data.datasets[0].data.map((v, i) => (
@@ -718,8 +802,26 @@ function SimpleLineChart({ data }: { data: ChartData }) {
 }
 
 function SimplePieChart({ data }: { data: ChartData }) {
+  if (!data || !data.datasets || !data.datasets[0] || !data.datasets[0].data) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-500">Sem dados para exibir</p>
+      </div>
+    );
+  }
+  
   const total = data.datasets[0].data.reduce((a, b) => a + b, 0) || 1;
   const colors = (data.datasets[0].backgroundColor as string[]) || [];
+  const hasData = data.datasets[0].data.some(v => v > 0);
+  
+  if (!hasData) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg">
+        <p className="text-gray-500">Nenhum dado no período selecionado</p>
+      </div>
+    );
+  }
+  
   return (
     <div className="h-full flex items-center justify-center">
       <div className="w-48 h-48 rounded-full overflow-hidden relative">
