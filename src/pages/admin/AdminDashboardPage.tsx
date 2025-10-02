@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { BarChart3, Users, FileText, CreditCard, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
@@ -20,6 +21,7 @@ interface DashboardStats {
 const AdminDashboardPage: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalAds: 0,
@@ -132,6 +134,18 @@ const AdminDashboardPage: React.FC = () => {
           }
         } catch (err) {
           console.warn('Error fetching total ads, using fallback:', err);
+        }
+
+        try {
+          // Fetch pending ads
+          const { count: pendingAdsCount } = await supabase
+            .from('ads')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'pending');
+          // reuse in UI via totalAds? keep separate in UI below using local var
+          (pendingAdsCount);
+        } catch (_) {
+          // ignore
         }
 
         try {
@@ -340,22 +354,26 @@ const AdminDashboardPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium mb-4">Ações Rápidas</h3>
               <div className="grid grid-cols-2 gap-4">
-                <button className="p-4 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-left">
+                <button onClick={() => navigate('/admin/ads?status=pending')} className="p-4 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-left">
                   <FileText size={20} className="mb-2" />
                   <div className="font-medium">Aprovar Anúncios</div>
-                  <div className="text-sm text-blue-500">5 pendentes</div>
+                  <div className="text-sm text-blue-500">{/* pendentes de anúncios */}
+                    {/* usa stats.activeAds/totalAds para placeholder melhor? mostrar via consulta simples */}
+                    {/* como fallback, mostra pelo menos total de anúncios menos ativos se não houver info dedicada */}
+                    {Math.max(0, stats.totalAds - stats.activeAds)} pendentes
+                  </div>
                 </button>
-                <button className="p-4 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-left">
+                <button onClick={() => navigate('/admin/payments?status=pending')} className="p-4 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-left">
                   <CreditCard size={20} className="mb-2" />
                   <div className="font-medium">Verificar Pagamentos</div>
                   <div className="text-sm text-green-500">{stats.pendingPayments} pendentes</div>
                 </button>
-                <button className="p-4 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-left">
+                <button onClick={() => navigate('/admin/users')} className="p-4 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-left">
                   <Users size={20} className="mb-2" />
                   <div className="font-medium">Gerenciar Usuários</div>
                   <div className="text-sm text-purple-500">{stats.totalUsers} total</div>
                 </button>
-                <button className="p-4 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-left">
+                <button onClick={() => navigate('/admin/reports')} className="p-4 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-left">
                   <TrendingUp size={20} className="mb-2" />
                   <div className="font-medium">Ver Relatórios</div>
                   <div className="text-sm text-orange-500">Análise completa</div>

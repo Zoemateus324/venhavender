@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { Eye, Edit, Trash2, CheckCircle, XCircle, Filter, Search, MoreHorizontal, AlertTriangle, FileText, Upload, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 interface Ad {
@@ -57,6 +57,7 @@ const AdminAdsPage: React.FC = () => {
   const [editPhotos, setEditPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     fetchAds();
@@ -65,6 +66,12 @@ const AdminAdsPage: React.FC = () => {
   useEffect(() => {
     fetchCategories();
     fetchUsers();
+    // aplica filtro inicial vindo da query string, ex: /admin/ads?status=pending
+    const initialStatus = (searchParams.get('status') || '').toLowerCase();
+    if (['all', 'active', 'pending', 'expired', 'rejected'].includes(initialStatus)) {
+      setStatusFilter(initialStatus);
+      setPage(1);
+    }
   }, []);
 
   const fetchAds = async () => {
