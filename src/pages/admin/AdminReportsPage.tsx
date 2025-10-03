@@ -63,11 +63,26 @@ const AdminReportsPage: React.FC = () => {
   const fetchVisitors = async () => {
     try {
       const periodStart = getPeriodStartDate();
-      // visitantes únicos por device_id
+      const periodEnd = new Date();
+
+      // Tenta usar RPC para contagem exata no servidor
+      const { data: rpcCount, error: rpcError } = await supabase
+        .rpc('count_unique_visitors', {
+          p_start: periodStart.toISOString(),
+          p_end: periodEnd.toISOString(),
+        });
+
+      if (!rpcError && typeof rpcCount === 'number') {
+        setVisitorsCount(rpcCount);
+        return;
+      }
+
+      // Fallback: contar por device_id no cliente
       const { data, error } = await supabase
         .from('page_views')
         .select('device_id')
-        .gte('created_at', periodStart.toISOString());
+        .gte('created_at', periodStart.toISOString())
+        .lt('created_at', periodEnd.toISOString());
       if (error) throw error;
       const unique = new Set((data || []).map((r: any) => r.device_id));
       setVisitorsCount(unique.size);
