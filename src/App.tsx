@@ -23,21 +23,41 @@ function AppContent() {
     const deviceKey = 'vv_device_id';
     let deviceId = localStorage.getItem(deviceKey);
     if (!deviceId) {
-      deviceId = crypto.randomUUID();
+      try {
+        deviceId = crypto.randomUUID();
+      } catch (_) {
+        deviceId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      }
       localStorage.setItem(deviceKey, deviceId);
     }
 
     const recordView = async () => {
       try {
-        await supabase.from('page_views').insert([
+        const pathname = location.pathname + (location.search || '');
+        // Try with "path"
+        const { error: errPath } = await supabase.from('page_views').insert([
           {
             device_id: deviceId,
             user_id: user?.id || null,
-            path: location.pathname + (location.search || ''),
+            path: pathname,
           },
         ]);
+        if (errPath) {
+          // Fallback: try legacy column "page_path"
+          const { error: errPagePath } = await supabase.from('page_views').insert([
+            {
+              device_id: deviceId,
+              user_id: user?.id || null,
+              page_path: pathname,
+            },
+          ]);
+          if (errPagePath) {
+            // Last resort: log once for debugging
+            console.debug('page_views insert failed', { errPath, errPagePath });
+          }
+        }
       } catch (e) {
-        // ignore analytics errors
+        console.debug('page_views unexpected error', e);
       }
     };
 

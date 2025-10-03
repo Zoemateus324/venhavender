@@ -44,15 +44,16 @@ drop policy if exists "Anyone can insert page_views" on public.page_views;
 drop policy if exists "Authenticated can read page_views" on public.page_views;
 
 -- Insert policies
-create policy if not exists "Anon can insert page_views" on public.page_views
+create policy "Anon can insert page_views" on public.page_views
   for insert to anon
   with check (true);
 
-create policy if not exists "Auth can insert page_views" on public.page_views
+create policy "Auth can insert page_views" on public.page_views
   for insert to authenticated
   with check (true);
 
 -- Require is_admin helper
+drop function if exists public.is_admin(uuid);
 create or replace function public.is_admin(uid uuid)
 returns boolean
 language sql
@@ -64,11 +65,11 @@ $$;
 revoke all on function public.is_admin(uuid) from public;
 grant execute on function public.is_admin(uuid) to authenticated;
 
-create policy if not exists "Admin can read all page_views" on public.page_views
+create policy "Admin can read all page_views" on public.page_views
   for select to authenticated
   using (public.is_admin(auth.uid()));
 
-create policy if not exists "Users can read own/null page_views" on public.page_views
+create policy "Users can read own/null page_views" on public.page_views
   for select to authenticated
   using (user_id = auth.uid() or user_id is null);
 
