@@ -286,6 +286,16 @@ const AdDetailsPage: React.FC = () => {
               src={(Array.isArray((ad as any).photos) ? (ad as any).photos[activeImage] : (ad as any).images?.[activeImage])}
               alt={ad.title}
               className="w-full h-96 object-contain"
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={() => {
+                const photos = Array.isArray((ad as any).photos) ? (ad as any).photos : (ad as any).images || [];
+                if (photos.length > 1) {
+                  setActiveImage((prev) => (prev + 1) % photos.length);
+                }
+              }}
             />
           </div>
 
@@ -302,6 +312,10 @@ const AdDetailsPage: React.FC = () => {
                     src={image} 
                     alt={`${ad.title} - imagem ${index + 1}`} 
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                   />
                 </button>
               ))}

@@ -102,6 +102,10 @@ export default function SpecialAdsCarousel({ onAdClick }: SpecialAdsCarouselProp
                     src={ad.large_image_url || ad.image_url}
                     alt={ad.title}
                     className="w-full h-full object-cover rounded-lg"
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">

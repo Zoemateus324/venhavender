@@ -1,14 +1,52 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import FeaturedAds from '../components/FeaturedAds';
 import AdGrid from '../components/AdGrid';
 import FooterAds from '../components/FooterAds';
 import SpecialAdsCarousel from '../components/SpecialAdsCarousel';
 import { TrendingUp, ShieldCheck, Clock } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [visitorsCount, setVisitorsCount] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchVisitors = async () => {
+      try {
+        const now = new Date();
+        const start = new Date();
+        start.setDate(now.getDate() - 30);
+
+        // Tenta RPC de contagem no servidor
+        const { data: rpcCount, error: rpcError } = await supabase
+          .rpc('count_unique_visitors', {
+            p_start: start.toISOString(),
+            p_end: now.toISOString(),
+          });
+
+        if (!rpcError && typeof rpcCount === 'number') {
+          setVisitorsCount(rpcCount);
+          return;
+        }
+
+        // Fallback local por device_id
+        const { data, error } = await supabase
+          .from('page_views')
+          .select('device_id')
+          .gte('created_at', start.toISOString())
+          .lt('created_at', now.toISOString());
+        if (error) throw error;
+        const unique = new Set((data || []).map((r: any) => r.device_id));
+        setVisitorsCount(unique.size);
+      } catch (_) {
+        setVisitorsCount(0);
+      }
+    };
+
+    fetchVisitors();
+  }, []);
   
 
   const handleSearch = (e: React.FormEvent) => {
@@ -69,6 +107,14 @@ export default function HomePage() {
                 <div className="text-lg sm:text-xl font-bold">24/7</div>
                 <div className="text-xs sm:text-sm opacity-80">Suporte Online</div>
               </div>
+            </div>
+          </div>
+
+          {/* Visitantes únicos no período */}
+          <div className="mt-6 sm:mt-8 flex items-center justify-center">
+            <div>
+              <p className="text-sm text-gray-100/80 text-center">Visitantes únicos no período</p>
+              <p className="text-2xl font-bold mt-1 text-center">{visitorsCount}</p>
             </div>
           </div>
         </div>

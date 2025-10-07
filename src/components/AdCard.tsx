@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, MapPin, Clock, Eye, MessageCircle } from 'lucide-react';
 import { Ad } from '../types';
 
@@ -12,6 +12,7 @@ interface AdCardProps {
 
 export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const navigate = useNavigate();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -46,6 +47,16 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
               src={ad.photos[currentImageIndex]}
               alt={ad.title}
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={() => {
+                // tenta próxima imagem ou mostra fallback visual
+                if (ad.photos.length > 1) {
+                  setCurrentImageIndex((prev) => (prev + 1) % ad.photos.length);
+                }
+              }}
             />
             
             {/* Image Navigation */}
@@ -145,9 +156,11 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
             </div>
           </div>
           
-          {onContact && (
+          {(
             <button
-              onClick={onContact}
+              onClick={() => {
+                navigate(`/ads/${ad.id}`);
+              }}
               className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2 text-sm"
             >
               <MessageCircle size={16} />
