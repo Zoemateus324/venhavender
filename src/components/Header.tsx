@@ -52,15 +52,19 @@ export default function Header({
 
   return (
     <>
-      <header className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
+      <header className="bg-white shadow-md sticky top-0 z-50 h-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <Link to="/" className="inline-block">
-                <h1 className="text-2xl font-bold text-orange-600">
-                  Venha Vender
-                </h1>
+              <Link to="/" className="inline-flex items-center gap-2" aria-label="Ir para a página inicial">
+              <img
+                src="/logo-venha.png"
+                alt="Venha Vender"
+                className="h-12 w-12 sm:h-20 sm:w-20 object-contain pt-2"
+                draggable={false}
+              />
+                <span className="sr-only">Venha Vender</span>
               </Link>
             </div>
 
