@@ -12,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string, phone?: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -135,6 +136,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const requestPasswordReset = async (email: string) => {
+    try {
+      if (!email) throw new Error('Informe seu e-mail');
+      const redirectTo = `${window.location.origin}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+      toast.success('Se existir uma conta, enviamos um e-mail para redefinição.');
+    } catch (error) {
+      console.error('Error requesting password reset:', error);
+      toast.error('Não foi possível enviar o e-mail de redefinição.');
+      throw error;
+    }
+  };
+
   const updateProfile = async (updates: Partial<User>) => {
     try {
       if (!user) throw new Error('Usuário não autenticado');
@@ -163,7 +178,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
-    updateProfile
+    updateProfile,
+    requestPasswordReset
   };
 
   return (

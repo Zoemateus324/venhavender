@@ -8,7 +8,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ onClose }: AuthModalProps) {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, requestPasswordReset } = useAuth();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -152,6 +152,21 @@ export default function AuthModal({ onClose }: AuthModalProps) {
               : 'Já tem conta? Fazer login'
             }
           </button>
+          {isLogin && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await requestPasswordReset(formData.email);
+                  } catch {}
+                }}
+                className="text-sm text-gray-600 hover:text-gray-800 underline"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
