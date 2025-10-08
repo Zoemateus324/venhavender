@@ -287,6 +287,7 @@ const AdsGridPage: React.FC = () => {
         searchQuery={searchQuery}
         categoryFilter={selectedCategory}
         sellerFilter={sellerParam}
+        locationFilter={location}
         onContactAd={handleContactAd}
         onFavoriteAd={handleFavoriteAd}
         favoriteIds={favoriteIds}

@@ -8,6 +8,7 @@ interface AdGridProps {
   searchQuery?: string;
   categoryFilter?: string;
   sellerFilter?: string;
+  locationFilter?: string;
   onContactAd?: (ad: Ad) => void;
   onFavoriteAd?: (ad: Ad) => void;
   favoriteIds?: string[];
@@ -17,6 +18,7 @@ export default function AdGrid({
   searchQuery, 
   categoryFilter, 
   sellerFilter,
+  locationFilter,
   onContactAd, 
   onFavoriteAd,
   favoriteIds = []
@@ -28,18 +30,25 @@ export default function AdGrid({
   const [sortBy, setSortBy] = useState<'newest' | 'price_low' | 'price_high'>('newest');
   const [stateFilter, setStateFilter] = useState<string>('');
   const [cityFilter, setCityFilter] = useState<string>('');
+  const [externalLocationFilter, setExternalLocationFilter] = useState<string>(locationFilter || '');
 
   const clearFilters = () => {
     setSelectedCategory('');
     setSortBy('newest');
     setStateFilter('');
     setCityFilter('');
+    setExternalLocationFilter('');
   };
 
   useEffect(() => {
     fetchCategories();
     fetchAds();
-  }, [searchQuery, selectedCategory, sortBy, sellerFilter, stateFilter, cityFilter]);
+  }, [searchQuery, selectedCategory, sortBy, sellerFilter, stateFilter, cityFilter, externalLocationFilter]);
+
+  // Update external location filter when prop changes
+  useEffect(() => {
+    setExternalLocationFilter(locationFilter || '');
+  }, [locationFilter]);
 
   // Atualiza categorias em tempo real quando houver mudanças na tabela
   useEffect(() => {
@@ -98,12 +107,22 @@ export default function AdGrid({
         query = query.eq('user_id', sellerFilter);
       }
 
-      // Apply location filters (city/state) against the free-text 'location' column
+      // Apply location filters - combine all location filters with AND logic
+      const locationFilters: string[] = [];
+      
       if (stateFilter) {
-        query = query.ilike('location', `%${stateFilter}%`);
+        locationFilters.push(`location.ilike.%${stateFilter}%`);
       }
       if (cityFilter) {
-        query = query.ilike('location', `%${cityFilter}%`);
+        locationFilters.push(`location.ilike.%${cityFilter}%`);
+      }
+      if (externalLocationFilter) {
+        locationFilters.push(`location.ilike.%${externalLocationFilter}%`);
+      }
+      
+      // Apply all location filters with AND logic
+      if (locationFilters.length > 0) {
+        query = query.and(locationFilters.join(','));
       }
 
       // Apply sorting
@@ -222,9 +241,9 @@ export default function AdGrid({
             <button
               type="button"
               onClick={clearFilters}
-              disabled={!selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter}
+              disabled={!selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter && !externalLocationFilter}
               className={`px-3 py-2 rounded-lg border transition-colors w-full sm:w-auto ${
-                !selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter
+                !selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter && !externalLocationFilter
                   ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                   : 'border-gray-300 text-gray-700 hover:text-orange-600 hover:border-orange-500'
               }`}
