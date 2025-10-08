@@ -25,6 +25,25 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const getExpirationDate = () => {
+    const anyAd = ad as any;
+    const raw = anyAd.end_date || anyAd.expires_at;
+    return raw ? new Date(raw) : null;
+  };
+
+  const getDaysUntilExpiration = () => {
+    const exp = getExpirationDate();
+    if (!exp) return null;
+    const now = new Date();
+    const diffMs = exp.getTime() - now.getTime();
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  };
+
+  const isExpiringSoon = () => {
+    const days = getDaysUntilExpiration();
+    return days !== null && days >= 0 && days <= 3;
+  };
+
   const nextImage = () => {
     if (ad.photos.length > 1) {
       setCurrentImageIndex((prev) => (prev + 1) % ad.photos.length);
@@ -93,6 +112,19 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
             Sem imagem
+          </div>
+        )}
+
+        {/* Expiration Badge */}
+        {isExpiringSoon() && (
+          <div className="absolute bottom-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold shadow">
+            {(() => {
+              const days = getDaysUntilExpiration();
+              if (days === null) return null;
+              if (days === 0) return 'Expira hoje';
+              if (days === 1) return 'Expira amanhã';
+              return `Expira em ${days} dias`;
+            })()}
           </div>
         )}
         

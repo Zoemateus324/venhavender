@@ -26,11 +26,20 @@ export default function AdGrid({
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(categoryFilter || '');
   const [sortBy, setSortBy] = useState<'newest' | 'price_low' | 'price_high'>('newest');
+  const [stateFilter, setStateFilter] = useState<string>('');
+  const [cityFilter, setCityFilter] = useState<string>('');
+
+  const clearFilters = () => {
+    setSelectedCategory('');
+    setSortBy('newest');
+    setStateFilter('');
+    setCityFilter('');
+  };
 
   useEffect(() => {
     fetchCategories();
     fetchAds();
-  }, [searchQuery, selectedCategory, sortBy, sellerFilter]);
+  }, [searchQuery, selectedCategory, sortBy, sellerFilter, stateFilter, cityFilter]);
 
   // Atualiza categorias em tempo real quando houver mudanças na tabela
   useEffect(() => {
@@ -87,6 +96,14 @@ export default function AdGrid({
       // Apply seller filter
       if (sellerFilter) {
         query = query.eq('user_id', sellerFilter);
+      }
+
+      // Apply location filters (city/state) against the free-text 'location' column
+      if (stateFilter) {
+        query = query.ilike('location', `%${stateFilter}%`);
+      }
+      if (cityFilter) {
+        query = query.ilike('location', `%${cityFilter}%`);
       }
 
       // Apply sorting
@@ -179,6 +196,41 @@ export default function AdGrid({
               <option value="price_low">Menor preço</option>
               <option value="price_high">Maior preço</option>
             </select>
+
+            {/* Estado (UF) */}
+            <select
+              value={stateFilter}
+              onChange={(e) => setStateFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-full sm:w-auto"
+            >
+              <option value="">Todos os estados</option>
+              {['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(uf => (
+                <option key={uf} value={uf}>{uf}</option>
+              ))}
+            </select>
+
+            {/* Cidade */}
+            <input
+              type="text"
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              placeholder="Cidade"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-full sm:w-auto"
+            />
+
+            {/* Limpar filtros */}
+            <button
+              type="button"
+              onClick={clearFilters}
+              disabled={!selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter}
+              className={`px-3 py-2 rounded-lg border transition-colors w-full sm:w-auto ${
+                !selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter
+                  ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'border-gray-300 text-gray-700 hover:text-orange-600 hover:border-orange-500'
+              }`}
+            >
+              Limpar filtros
+            </button>
           </div>
         </div>
       </div>

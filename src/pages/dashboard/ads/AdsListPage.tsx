@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { supabase } from '../../../lib/supabase';
-import { PlusCircle, Edit, Copy, Trash, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { PlusCircle, Edit, Copy, Trash, Eye, EyeOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Category } from '../../../types';
 
@@ -26,6 +26,7 @@ const AdsListPage: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [showExpiryBanner, setShowExpiryBanner] = useState<boolean>(true);
 
   useEffect(() => {
     fetchAds();
@@ -63,6 +64,30 @@ const AdsListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getExpirationDate = (ad: Ad) => {
+    // Compatibilidade: preferir end_date; fallback para expires_at
+    const raw = (ad as any).end_date || (ad as any).expires_at;
+    return raw ? new Date(raw) : null;
+  };
+
+  const getDaysUntilExpiration = (ad: Ad) => {
+    const exp = getExpirationDate(ad);
+    if (!exp) return null;
+    const now = new Date();
+    const diffMs = exp.getTime() - now.getTime();
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  };
+
+  const isExpired = (ad: Ad) => {
+    const exp = getExpirationDate(ad);
+    return exp ? exp < new Date() : false;
+  };
+
+  const isExpiringSoon = (ad: Ad, thresholdDays = 3) => {
+    const days = getDaysUntilExpiration(ad);
+    return days !== null && days > 0 && days <= thresholdDays;
   };
 
   const fetchCategories = async () => {
@@ -216,9 +241,8 @@ const AdsListPage: React.FC = () => {
     }
   };
 
-  const isExpired = (expiresAt: string) => {
-    return new Date(expiresAt) < new Date();
-  };
+  // Mantido para compatibilidade de chamadas existentes (não utilizado abaixo)
+  const isExpiredLegacy = (expiresAt: string) => new Date(expiresAt) < new Date();
 
   return (
     <div>
@@ -278,6 +302,24 @@ const AdsListPage: React.FC = () => {
         </div>
       ) : ads.length > 0 ? (
         <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Expiration Banner */}
+          {showExpiryBanner && ads.some((ad) => isExpiringSoon(ad)) && (
+            <div className="px-4 sm:px-6 py-3 bg-yellow-50 border-b border-yellow-200 flex items-start gap-3">
+              <AlertTriangle className="text-yellow-600 flex-shrink-0 mt-0.5" size={18} />
+              <div className="text-sm text-yellow-800">
+                <div className="font-medium">Alguns anúncios estão prestes a expirar</div>
+                <div>
+                  {ads.filter((ad) => isExpiringSoon(ad)).length} anúncio(s) expiram em até 3 dias. Considere renovar para manter a visibilidade.
+                </div>
+              </div>
+              <button
+                onClick={() => setShowExpiryBanner(false)}
+                className="ml-auto text-yellow-700 hover:text-yellow-900 text-xs"
+              >
+                ocultar
+              </button>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
@@ -338,11 +380,23 @@ const AdsListPage: React.FC = () => {
                       {ad.views || 0}
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-gray-500">
-                      {isExpired(ad.expires_at) ? (
-                        <span className="text-red-500">Expirado</span>
-                      ) : (
-                        formatDate(ad.expires_at)
-                      )}
+                      {(() => {
+                        const exp = getExpirationDate(ad);
+                        if (!exp) return <span className="text-gray-400">—</span>;
+                        if (isExpired(ad)) return <span className="text-red-500">Expirado</span>;
+
+                        const days = getDaysUntilExpiration(ad);
+                        return (
+                          <div className="flex items-center gap-2">
+                            <span>{formatDate(exp.toISOString())}</span>
+                            {isExpiringSoon(ad) && (
+                              <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                                {days === 1 ? 'Expira amanhã' : days === 0 ? 'Expira hoje' : `Expira em ${days} dias`}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right font-medium">
                       <div className="flex justify-end space-x-2">
@@ -384,7 +438,7 @@ const AdsListPage: React.FC = () => {
                             <Eye size={18} />
                           </button>
                         )}
-                        {isExpired(ad.expires_at) && (
+                        {isExpired(ad) && (
                           <button
                             onClick={() => handleRenewAd(ad.id)}
                             className="text-purple-600 hover:text-purple-900"

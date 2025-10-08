@@ -52,16 +52,16 @@ export default function Header({
 
   return (
     <>
-      <header className="bg-white shadow-md sticky top-0 z-50 h-20">
+      <header className="bg-white shadow-md sticky top-0 z-50 md:h-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between py-2 md:h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link to="/" className="inline-flex items-center gap-2" aria-label="Ir para a página inicial">
               <img
                 src="/logo-venha.png"
                 alt="Venha Vender"
-                className="h-12 w-12 sm:h-20 sm:w-20 object-contain pt-2"
+                className="h-10 w-10 sm:h-20 sm:w-20 object-contain pt-1 md:pt-2"
                 draggable={false}
               />
                 <span className="sr-only">Venha Vender</span>
@@ -159,8 +159,8 @@ export default function Header({
             </div>
           </div>
 
-          {/* Mobile Search */}
-          <div className="md:hidden pb-3">
+          {/* Mobile Search (mantida dentro do header) */}
+          <div className="md:hidden pb-2">
             <form onSubmit={handleSearch} className="relative">
               <input
                 type="text"
