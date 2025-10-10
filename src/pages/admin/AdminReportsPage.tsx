@@ -181,16 +181,82 @@ const AdminReportsPage: React.FC = () => {
       // Calculate percentage changes
       const userChange = prevPeriodUsers ? ((newUsers - prevPeriodUsers) / prevPeriodUsers) * 100 : 0;
       const adChange = prevPeriodAds ? ((newAds - prevPeriodAds) / prevPeriodAds) * 100 : 0;
-      
-      // Mock revenue data for now
-      const currentRevenue = 5840;
-      const prevRevenue = 4320;
-      const revenueChange = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
-      
-      // Mock conversion rate
-      const currentConversion = 2.8;
-      const prevConversion = 2.4;
-      const conversionChange = ((currentConversion - prevConversion) / prevConversion) * 100;
+
+      // Revenue (R$) - real data from payments (approved)
+      const { data: paymentsNow, error: paymentsNowErr } = await supabase
+        .from('payments')
+        .select('amount, payment_date, created_at')
+        .gte('created_at', periodStart.toISOString())
+        .eq('status', 'approved');
+      if (paymentsNowErr) throw paymentsNowErr;
+      const currentRevenue = (paymentsNow || []).reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+
+      const { data: paymentsPrev, error: paymentsPrevErr } = await supabase
+        .from('payments')
+        .select('amount, payment_date, created_at')
+        .gte('created_at', previousPeriodStart.toISOString())
+        .lt('created_at', periodStart.toISOString())
+        .eq('status', 'approved');
+      if (paymentsPrevErr) throw paymentsPrevErr;
+      const prevRevenue = (paymentsPrev || []).reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+      const revenueChange = prevRevenue > 0 ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 : (currentRevenue > 0 ? 100 : 0);
+
+      // Conversion rate = approved payments count / unique visitors in period
+      // Get unique visitors for current period (try RPC, fallback to page_views)
+      let currentVisitors = 0;
+      const { data: rpcNow, error: rpcNowErr } = await supabase.rpc('count_unique_visitors', {
+        p_start: periodStart.toISOString(),
+        p_end: new Date().toISOString(),
+      });
+      if (!rpcNowErr && typeof rpcNow === 'number') {
+        currentVisitors = rpcNow;
+      } else {
+        const { data: pvNow, error: pvNowErr } = await supabase
+          .from('page_views')
+          .select('device_id')
+          .gte('created_at', periodStart.toISOString());
+        if (!pvNowErr) {
+          currentVisitors = new Set((pvNow || []).map((r: any) => r.device_id)).size;
+        }
+      }
+
+      // Approved payments count in current period
+      const { count: approvedNowCount } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', periodStart.toISOString())
+        .eq('status', 'approved');
+
+      const currentConversion = currentVisitors > 0 ? (Number(approvedNowCount || 0) / currentVisitors) * 100 : 0;
+
+      // Previous period conversion
+      let prevVisitors = 0;
+      const { data: rpcPrev, error: rpcPrevErr } = await supabase.rpc('count_unique_visitors', {
+        p_start: previousPeriodStart.toISOString(),
+        p_end: periodStart.toISOString(),
+      });
+      if (!rpcPrevErr && typeof rpcPrev === 'number') {
+        prevVisitors = rpcPrev;
+      } else {
+        const { data: pvPrev } = await supabase
+          .from('page_views')
+          .select('device_id')
+          .gte('created_at', previousPeriodStart.toISOString())
+          .lt('created_at', periodStart.toISOString());
+        prevVisitors = new Set((pvPrev || []).map((r: any) => r.device_id)).size;
+      }
+
+      const { count: approvedPrevCount } = await supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', previousPeriodStart.toISOString())
+        .lt('created_at', periodStart.toISOString())
+        .eq('status', 'approved');
+
+      const prevConversion = prevVisitors > 0 ? (Number(approvedPrevCount || 0) / prevVisitors) * 100 : 0;
+      const conversionChange = prevConversion > 0
+        ? ((currentConversion - prevConversion) / prevConversion) * 100
+        : (currentConversion > 0 ? 100 : 0);
       
       setStatCards([
         {
@@ -209,14 +275,14 @@ const AdminReportsPage: React.FC = () => {
         },
         {
           title: 'Receita',
-          value: `R$ ${currentRevenue.toLocaleString('pt-BR')}`,
+          value: `R$ ${currentRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           change: parseFloat(revenueChange.toFixed(1)),
           changeType: revenueChange > 0 ? 'positive' : revenueChange < 0 ? 'negative' : 'neutral',
           icon: <BarChart3 size={24} className="text-purple-500" />
         },
         {
           title: 'Taxa de Conversão',
-          value: `${currentConversion}%`,
+          value: `${currentConversion.toFixed(1)}%`,
           change: parseFloat(conversionChange.toFixed(1)),
           changeType: conversionChange > 0 ? 'positive' : conversionChange < 0 ? 'negative' : 'neutral',
           icon: <PieChart size={24} className="text-orange-500" />
