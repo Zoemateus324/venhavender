@@ -107,22 +107,25 @@ export default function AdGrid({
         query = query.eq('user_id', sellerFilter);
       }
 
-      // Apply location filters - combine all location filters with AND logic
-      const locationFilters: string[] = [];
-      
+      // Apply location filters by chaining conditions (AND semantics)
       if (stateFilter) {
-        locationFilters.push(`location.ilike.%${stateFilter}%`);
+        const uf = stateFilter.toUpperCase();
+        // Evita falsos positivos sem usar regex/"," no valor (que quebra o or())
+        // Cobre casos comuns: "... UF" | "UF ..." | "... UF ..." | "... - UF" | "UF - ..."
+        const orParts = [
+          `location.ilike.% ${uf}`,
+          `location.ilike.% ${uf} %`,
+          `location.ilike.% - ${uf}`,
+          `location.ilike.${uf} %`,
+          `location.ilike.${uf} - %`,
+        ];
+        query = query.or(orParts.join(','));
       }
       if (cityFilter) {
-        locationFilters.push(`location.ilike.%${cityFilter}%`);
+        query = query.ilike('location', `%${cityFilter}%`);
       }
       if (externalLocationFilter) {
-        locationFilters.push(`location.ilike.%${externalLocationFilter}%`);
-      }
-      
-      // Apply all location filters with AND logic
-      if (locationFilters.length > 0) {
-        query = query.and(locationFilters.join(','));
+        query = query.ilike('location', `%${externalLocationFilter}%`);
       }
 
       // Apply sorting
@@ -249,6 +252,15 @@ export default function AdGrid({
               }`}
             >
               Limpar filtros
+            </button>
+
+            {/* Aplicar filtros */}
+            <button
+              type="button"
+              onClick={fetchAds}
+              className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 w-full sm:w-auto"
+            >
+              Aplicar filtros
             </button>
           </div>
         </div>
