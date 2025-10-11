@@ -40,6 +40,7 @@ export interface Ad {
   user_id: string;
   category_id: string;
   type: 'grid' | 'header' | 'footer';
+  ad_type?: 'sale' | 'rent';
   title: string;
   description: string;
   price: number;

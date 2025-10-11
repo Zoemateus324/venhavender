@@ -27,6 +27,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
     photos: [] as string[],
     plan_id: '',
     type: 'grid' as 'grid' | 'header' | 'footer',
+    ad_type: 'sale' as 'sale' | 'rent',
     contact_info: {},
     footer_exposures: 720,
     footer_art_needed: false
@@ -167,6 +168,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
         user_id: ownerId || user.id,
         category_id: formData.category_id,
         type: formData.type,
+        // ad_type: formData.ad_type, // Temporarily commented out until migration is applied
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price) || 0,
@@ -325,6 +327,22 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
                         {category.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo do Anúncio *
+                  </label>
+                  <select
+                    name="ad_type"
+                    value={formData.ad_type}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    required
+                  >
+                    <option value="sale">Venda</option>
+                    <option value="rent">Locação</option>
                   </select>
                 </div>
               </div>
@@ -558,6 +576,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
                     <h4 className="font-medium text-gray-900 mb-2">Informações do Anúncio</h4>
                     <div className="space-y-1 text-sm">
                       <div><strong>Título:</strong> {formData.title}</div>
+                      <div><strong>Tipo:</strong> {formData.ad_type === 'sale' ? 'Venda' : 'Locação'}</div>
                       <div><strong>Preço:</strong> R$ {parseFloat(formData.price || '0').toFixed(2)}</div>
                       <div><strong>Localização:</strong> {formData.location}</div>
                       <div><strong>Fotos:</strong> {formData.photos.length}</div>

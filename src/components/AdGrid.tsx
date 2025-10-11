@@ -9,6 +9,7 @@ interface AdGridProps {
   categoryFilter?: string;
   sellerFilter?: string;
   locationFilter?: string;
+  adTypeFilter?: 'sale' | 'rent' | '';
   onContactAd?: (ad: Ad) => void;
   onFavoriteAd?: (ad: Ad) => void;
   favoriteIds?: string[];
@@ -19,6 +20,7 @@ export default function AdGrid({
   categoryFilter, 
   sellerFilter,
   locationFilter,
+  adTypeFilter,
   onContactAd, 
   onFavoriteAd,
   favoriteIds = []
@@ -31,6 +33,7 @@ export default function AdGrid({
   const [stateFilter, setStateFilter] = useState<string>('');
   const [cityFilter, setCityFilter] = useState<string>('');
   const [externalLocationFilter, setExternalLocationFilter] = useState<string>(locationFilter || '');
+  const [selectedAdType, setSelectedAdType] = useState<'sale' | 'rent' | ''>(adTypeFilter || '');
 
   const clearFilters = () => {
     setSelectedCategory('');
@@ -38,12 +41,13 @@ export default function AdGrid({
     setStateFilter('');
     setCityFilter('');
     setExternalLocationFilter('');
+    setSelectedAdType('');
   };
 
   useEffect(() => {
     fetchCategories();
     fetchAds();
-  }, [searchQuery, selectedCategory, sortBy, sellerFilter, stateFilter, cityFilter, externalLocationFilter]);
+  }, [searchQuery, selectedCategory, sortBy, sellerFilter, stateFilter, cityFilter, externalLocationFilter, selectedAdType]);
 
   // Update external location filter when prop changes
   useEffect(() => {
@@ -105,6 +109,13 @@ export default function AdGrid({
       // Apply seller filter
       if (sellerFilter) {
         query = query.eq('user_id', sellerFilter);
+      }
+
+      // Apply ad type filter (only if the field exists in the database)
+      if (selectedAdType) {
+        // Temporarily comment out until migration is applied
+        // query = query.eq('ad_type', selectedAdType);
+        console.log('Ad type filter temporarily disabled until database migration is applied');
       }
 
       // Apply location filters by chaining conditions (AND semantics)
@@ -210,6 +221,16 @@ export default function AdGrid({
             </select>
             
             <select
+              value={selectedAdType}
+              onChange={(e) => setSelectedAdType(e.target.value as 'sale' | 'rent' | '')}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-full sm:w-auto"
+            >
+              <option value="">Todos os tipos</option>
+              <option value="sale">Venda</option>
+              <option value="rent">Locação</option>
+            </select>
+
+            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-full sm:w-auto"
@@ -244,9 +265,9 @@ export default function AdGrid({
             <button
               type="button"
               onClick={clearFilters}
-              disabled={!selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter && !externalLocationFilter}
+              disabled={!selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter && !externalLocationFilter && !selectedAdType}
               className={`px-3 py-2 rounded-lg border transition-colors w-full sm:w-auto ${
-                !selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter && !externalLocationFilter
+                !selectedCategory && sortBy === 'newest' && !stateFilter && !cityFilter && !externalLocationFilter && !selectedAdType
                   ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                   : 'border-gray-300 text-gray-700 hover:text-orange-600 hover:border-orange-500'
               }`}

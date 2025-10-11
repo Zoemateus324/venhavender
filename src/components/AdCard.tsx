@@ -148,6 +148,15 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
             DESTAQUE
           </div>
         )}
+
+        {/* Ad Type Badge */}
+        <div className={`absolute top-3 ${ad.type === 'header' ? 'left-20' : 'left-3'} bg-gradient-to-r ${
+          (ad.ad_type || 'sale') === 'sale' 
+            ? 'from-green-500 to-green-600' 
+            : 'from-blue-500 to-blue-600'
+        } text-white px-2 py-1 rounded text-xs font-medium`}>
+          {(ad.ad_type || 'sale') === 'sale' ? 'VENDA' : 'LOCAÇÃO'}
+        </div>
       </Link>
 
       {/* Content */}

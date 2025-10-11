@@ -11,6 +11,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [visitorsCount, setVisitorsCount] = useState<number>(0);
+  const [selectedAdType, setSelectedAdType] = useState<'sale' | 'rent' | ''>('');
 
   useEffect(() => {
     const fetchVisitors = async () => {
@@ -134,8 +135,44 @@ export default function HomePage() {
           </section>
 
       <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Anúncios Recentes</h2>
-        <AdGrid />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">Anúncios Recentes</h2>
+          
+          {/* Filtros rápidos */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSelectedAdType('')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                selectedAdType === ''
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setSelectedAdType('sale')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                selectedAdType === 'sale'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Venda
+            </button>
+            <button
+              onClick={() => setSelectedAdType('rent')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                selectedAdType === 'rent'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Locação
+            </button>
+          </div>
+        </div>
+        <AdGrid adTypeFilter={selectedAdType} />
       </section>
 
       <section className="mb-12">
