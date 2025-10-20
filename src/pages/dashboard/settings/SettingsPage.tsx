@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { User, Save } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, updatePassword } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -212,14 +212,8 @@ const SettingsPage: React.FC = () => {
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-medium">Alterar Senha</h3>
-              <p className="text-gray-500 text-sm mb-2">Para alterar sua senha, clique no botão abaixo e siga as instruções enviadas por email.</p>
-              <button
-                type="button"
-                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:text-orange-600 active:text-orange-600 focus:text-orange-600 transition-colors"
-                onClick={() => toast.success('Link para redefinição de senha enviado para seu email!')}
-              >
-                Solicitar alteração de senha
-              </button>
+              <p className="text-gray-500 text-sm mb-4">Altere sua senha informando a atual e a nova senha.</p>
+              <ChangePasswordForm onSubmit={updatePassword} />
             </div>
             
             <div>
@@ -241,3 +235,79 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
+
+function ChangePasswordForm({ onSubmit }: { onSubmit: (currentPassword: string, newPassword: string) => Promise<void> }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword) {
+      toast.error('Preencha todas as senhas');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('A nova senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('A confirmação não confere');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await onSubmit(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Senha atual</label>
+        <input
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+          placeholder="Sua senha atual"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Nova senha</label>
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+          placeholder="Mínimo 6 caracteres"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar nova senha</label>
+        <input
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+          placeholder="Repita a nova senha"
+        />
+      </div>
+      <div className="md:col-span-3">
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`px-4 py-2 rounded-md text-white ${submitting ? 'bg-orange-400' : 'bg-orange-600 hover:bg-orange-700'}`}
+        >
+          {submitting ? 'Salvando...' : 'Alterar senha'}
+        </button>
+      </div>
+    </form>
+  );
+}

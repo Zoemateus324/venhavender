@@ -13,6 +13,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -150,6 +151,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      if (!supabaseUser?.email) throw new Error('Sessão inválida');
+      if (!currentPassword || !newPassword) throw new Error('Preencha as senhas');
+
+      // Reautentica para garantir permissão de alterar senha
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: supabaseUser.email,
+        password: currentPassword
+      });
+      if (reauthError) throw new Error('Senha atual incorreta');
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success('Senha alterada com sucesso!');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast.error('Não foi possível alterar a senha.');
+      throw error;
+    }
+  };
+
   const updateProfile = async (updates: Partial<User>) => {
     try {
       if (!user) throw new Error('Usuário não autenticado');
@@ -179,7 +202,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     updateProfile,
-    requestPasswordReset
+    requestPasswordReset,
+    updatePassword
   };
 
   return (
