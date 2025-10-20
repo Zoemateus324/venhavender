@@ -28,6 +28,15 @@ const AdminUsersPage: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user'
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -258,6 +267,12 @@ const AdminUsersPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Gerenciar Usuários</h1>
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-md text-sm"
+          >
+            Novo Usuário
+          </button>
           {selectedUsers.length > 0 && (
             <div className="flex items-center space-x-2">
               <button
@@ -536,6 +551,104 @@ const AdminUsersPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Create User Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="px-6 py-4 border-b">
+              <h3 className="text-lg font-semibold">Novo Usuário</h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                <input
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+                  placeholder="Nome do usuário"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+                  placeholder="email@dominio.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                <input
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+                  placeholder="(xx) xxxxx-xxxx"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Senha (opcional)</label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+                  placeholder="Defina uma senha ou deixe vazio"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="user">Usuário</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                disabled={creating}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    setCreating(true);
+                    const resp = await fetch('/api/admin-create-user', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(newUser)
+                    });
+                    const json = await resp.json();
+                    if (!resp.ok) throw new Error(json?.error || 'Falha ao criar usuário');
+                    toast.success('Usuário criado com sucesso');
+                    setShowCreateModal(false);
+                    setNewUser({ name: '', email: '', phone: '', password: '', role: 'user' });
+                    fetchUsers();
+                  } catch (e: any) {
+                    toast.error(e?.message || 'Erro ao criar usuário');
+                  } finally {
+                    setCreating(false);
+                  }
+                }}
+                className={`px-4 py-2 rounded-md text-white ${creating ? 'bg-orange-400' : 'bg-orange-600 hover:bg-orange-700'}`}
+                disabled={creating || !newUser.email}
+              >
+                {creating ? 'Criando...' : 'Criar Usuário'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
