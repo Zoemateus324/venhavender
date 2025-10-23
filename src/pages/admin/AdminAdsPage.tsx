@@ -26,6 +26,7 @@ interface Ad {
   };
   views: number;
   reports_count?: number;
+  availability_status?: 'available' | 'sold' | 'reserved';
 }
 
 const AdminAdsPage: React.FC = () => {
@@ -52,7 +53,11 @@ const AdminAdsPage: React.FC = () => {
     description: '',
     price: 0,
     category_id: '',
-    status: 'active'
+    status: 'active',
+    location: '',
+    contact_phone: '',
+    contact_email: '',
+    availability_status: 'available'
   });
   const [editPhotos, setEditPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -102,6 +107,7 @@ const AdminAdsPage: React.FC = () => {
           description,
           price,
           status,
+          availability_status,
           created_at,
           views,
           user_id,
@@ -189,6 +195,25 @@ const AdminAdsPage: React.FC = () => {
     }
   };
 
+  const handleAvailabilityChange = async (adId: string, newAvailability: 'available' | 'reserved' | 'sold') => {
+    try {
+      const { error } = await supabase
+        .from('ads')
+        .update({ availability_status: newAvailability })
+        .eq('id', adId);
+
+      if (error) throw error;
+
+      setAds(ads.map(ad => ad.id === adId ? { ...ad, availability_status: newAvailability } : ad));
+
+      const label = newAvailability === 'sold' ? 'Vendido' : newAvailability === 'reserved' ? 'Reservado' : 'Disponível';
+      toast.success(`Disponibilidade alterada para ${label}`);
+    } catch (error) {
+      console.error('Error updating availability:', error);
+      toast.error('Erro ao atualizar disponibilidade do anúncio');
+    }
+  };
+
   const handleDeleteAd = async (adId: string) => {
     if (!confirm('Tem certeza que deseja excluir este anúncio? Esta ação não pode ser desfeita.')) {
       return;
@@ -217,7 +242,11 @@ const AdminAdsPage: React.FC = () => {
       description: ad.description,
       price: ad.price,
       category_id: ad.category_id,
-      status: ad.status
+      status: ad.status,
+      location: (ad as any).location || '',
+      contact_phone: (ad as any).contact_phone || '',
+      contact_email: (ad as any).contact_email || '',
+      availability_status: ad.availability_status || 'available'
     });
     setEditPhotos(ad.photos || []);
     setShowEditModal(true);
@@ -237,7 +266,11 @@ const AdminAdsPage: React.FC = () => {
           price: editFormData.price,
           category_id: editFormData.category_id,
           status: editFormData.status,
-          photos: editPhotos
+          photos: editPhotos,
+          location: editFormData.location,
+          contact_phone: editFormData.contact_phone,
+          contact_email: editFormData.contact_email,
+          availability_status: editFormData.availability_status
         })
         .eq('id', editingAd.id);
 
@@ -585,6 +618,13 @@ const AdminAdsPage: React.FC = () => {
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(ad.status)}`}>
                         {getStatusText(ad.status)}
                       </span>
+                      {ad.availability_status && (
+                        <div className="mt-1">
+                          <span className={`px-2 inline-flex text-[10px] leading-5 font-semibold rounded-full ${ad.availability_status === 'sold' ? 'bg-red-100 text-red-800' : ad.availability_status === 'reserved' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                            {ad.availability_status === 'sold' ? 'Vendido' : ad.availability_status === 'reserved' ? 'Reservado' : 'Disponível'}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(ad.created_at)}
@@ -625,7 +665,7 @@ const AdminAdsPage: React.FC = () => {
                                 <Eye size={16} className="mr-2" />
                                 Ver anúncio
                               </button>
-                              {(ad.user_id === user?.id || user?.role === 'admin') && (
+                              {(ad.user_id === user?.id || (user as any)?.role === 'admin') && (
                                 <button
                                   onClick={() => handleEditAd(ad)}
                                   className="flex items-center px-4 py-2 text-sm text-blue-700 hover:bg-gray-100 w-full text-left"
@@ -658,6 +698,35 @@ const AdminAdsPage: React.FC = () => {
                                   Rejeitar
                                 </button>
                               )}
+                              <div className="border-t my-1"></div>
+                              <button
+                                onClick={() => {
+                                  handleAvailabilityChange(ad.id, 'available');
+                                  setShowActionMenu(null);
+                                }}
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                              >
+                                Disponível
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleAvailabilityChange(ad.id, 'reserved');
+                                  setShowActionMenu(null);
+                                }}
+                                className="flex items-center px-4 py-2 text-sm text-yellow-700 hover:bg-gray-100 w-full text-left"
+                              >
+                                Reservado
+                              </button>
+                              <button
+                                onClick={() => {
+                                handleAvailabilityChange(ad.id, 'sold');
+                                  setShowActionMenu(null);
+                                }}
+                                className="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-100 w-full text-left"
+                              >
+                                Vendido
+                              </button>
+                              <div className="border-t my-1"></div>
                               <button
                                 onClick={() => {
                                   handleDeleteAd(ad.id);

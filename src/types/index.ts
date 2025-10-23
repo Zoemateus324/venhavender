@@ -33,6 +33,7 @@ export interface Plan {
   featured: boolean;
   active: boolean;
   created_at: string;
+  asaas_payment_link?: string;
 }
 
 export interface Ad {
@@ -51,6 +52,7 @@ export interface Ad {
   start_date: string;
   end_date: string;
   status: 'active' | 'pending' | 'expired' | 'rejected';
+  availability_status: 'available' | 'sold' | 'reserved';
   views: number;
   exposures: number;
   max_exposures: number;

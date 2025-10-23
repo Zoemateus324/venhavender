@@ -28,6 +28,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
     plan_id: '',
     type: 'grid' as 'grid' | 'header' | 'footer',
     ad_type: 'sale' as 'sale' | 'rent',
+    availability_status: 'available' as 'available' | 'sold' | 'reserved',
     contact_info: {},
     footer_exposures: 720,
     footer_art_needed: false
@@ -168,7 +169,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
         user_id: ownerId || user.id,
         category_id: formData.category_id,
         type: formData.type,
-        // ad_type: formData.ad_type, // Temporarily commented out until migration is applied
+        ad_type: formData.ad_type,
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price) || 0,
@@ -178,6 +179,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
         plan_id: formData.plan_id || null,
         end_date: endDate.toISOString(),
         status: formData.type === 'footer' ? 'pending' : 'active',
+        availability_status: formData.availability_status,
         max_exposures: formData.type === 'footer' ? formData.footer_exposures : 0,
         admin_approved: formData.type !== 'footer'
       };
@@ -343,6 +345,23 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
                   >
                     <option value="sale">Venda</option>
                     <option value="rent">Locação</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status de Disponibilidade *
+                  </label>
+                  <select
+                    name="availability_status"
+                    value={formData.availability_status}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    required
+                  >
+                    <option value="available">Disponível</option>
+                    <option value="reserved">Reservado</option>
+                    <option value="sold">Vendido</option>
                   </select>
                 </div>
               </div>

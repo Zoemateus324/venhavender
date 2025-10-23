@@ -157,6 +157,17 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
         } text-white px-2 py-1 rounded text-xs font-medium`}>
           {(ad.ad_type || 'sale') === 'sale' ? 'VENDA' : 'LOCAÇÃO'}
         </div>
+
+        {/* Availability Status Badge */}
+        {ad.availability_status && ad.availability_status !== 'available' && (
+          <div className={`absolute ${ad.type === 'header' ? 'top-12 left-20' : 'top-12 left-3'} bg-gradient-to-r ${
+            ad.availability_status === 'sold' 
+              ? 'from-red-500 to-red-600' 
+              : 'from-yellow-500 to-yellow-600'
+          } text-white px-2 py-1 rounded text-xs font-medium shadow-lg`}>
+            {ad.availability_status === 'sold' ? 'VENDIDO' : 'RESERVADO'}
+          </div>
+        )}
       </Link>
 
       {/* Content */}

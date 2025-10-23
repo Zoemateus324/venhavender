@@ -16,6 +16,7 @@ interface Ad {
   location: string;
   contact_phone: string;
   contact_email: string;
+  availability_status: 'available' | 'sold' | 'reserved';
 }
 
 const EditAdPage: React.FC = () => {
@@ -34,7 +35,7 @@ const EditAdPage: React.FC = () => {
           .from('ads')
           .select(`
             id, title, description, price, photos, status, 
-            category_id, location, contact_phone, contact_email
+            category_id, location, contact_phone, contact_email, availability_status
           `)
           .eq('id', id)
           .eq('user_id', user?.id)
@@ -92,7 +93,8 @@ const EditAdPage: React.FC = () => {
           location: ad.location,
           contact_phone: ad.contact_phone,
           contact_email: ad.contact_email,
-          status: ad.status
+          status: ad.status,
+          availability_status: ad.availability_status
         })
         .eq('id', ad.id);
       if (error) throw error;
@@ -177,6 +179,20 @@ const EditAdPage: React.FC = () => {
               <option value="paused">Pausado</option>
               <option value="pending">Pendente</option>
               <option value="rejected">Rejeitado</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status de Disponibilidade</label>
+            <select 
+              name="availability_status" 
+              value={ad.availability_status} 
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="available">Disponível</option>
+              <option value="reserved">Reservado</option>
+              <option value="sold">Vendido</option>
             </select>
           </div>
           
