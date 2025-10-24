@@ -264,7 +264,7 @@ export default function AdminPlansPage() {
                         href={plan.asaas_payment_link}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="inline-block bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700"
                       >
                         Abrir Link
                       </a>
@@ -274,20 +274,20 @@ export default function AdminPlansPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button 
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                      className="bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 mr-4"
                       onClick={() => setShowEdit(plan)}
                     >
                       Editar
                     </button>
                     <button
-                      className="text-blue-600 hover:text-blue-900 mr-4 disabled:opacity-50"
+                      className="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 mr-4 disabled:opacity-50"
                       disabled={generatingId === plan.id}
                       onClick={() => generateAsaasLink(plan)}
                     >
                       {generatingId === plan.id ? 'Gerando...' : (plan.asaas_payment_link ? 'Atualizar Link Asaas' : 'Gerar Link Asaas')}
                     </button>
                     <button 
-                      className={`${plan.active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                      className={`${plan.active ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white px-3 py-1.5 rounded`}
                       onClick={() => togglePlanStatus(plan.id, plan.active)}
                     >
                       {plan.active ? 'Desativar' : 'Ativar'}

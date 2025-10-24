@@ -93,8 +93,8 @@ export default function AdGrid({
           category:categories(name, icon)
         `)
         .eq('status', 'active')
-        .in('type', ['grid', 'header'])
-        .or(`end_date.is.null,end_date.gte.${nowIso}`);
+        .in('type', ['grid', 'header', 'footer'])
+        .or(`end_date.is.null,end_date.gte.${nowIso},status.eq.active`);
 
       // Apply search filter
       if (searchQuery) {
@@ -111,11 +111,9 @@ export default function AdGrid({
         query = query.eq('user_id', sellerFilter);
       }
 
-      // Apply ad type filter (only if the field exists in the database)
+      // Apply ad type filter
       if (selectedAdType) {
-        // Temporarily comment out until migration is applied
-        // query = query.eq('ad_type', selectedAdType);
-        console.log('Ad type filter temporarily disabled until database migration is applied');
+        query = query.eq('ad_type', selectedAdType);
       }
 
       // Apply location filters by chaining conditions (AND semantics)

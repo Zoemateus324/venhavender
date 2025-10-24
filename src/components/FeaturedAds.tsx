@@ -32,7 +32,7 @@ export default function FeaturedAds({ onContactAd, onFavoriteAd, favoriteIds = [
         .eq('type', 'header')
         .or(`end_date.is.null,end_date.gte.${nowIso}`)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (error) throw error;
       setFeaturedAds(data || []);

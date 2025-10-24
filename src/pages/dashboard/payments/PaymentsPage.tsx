@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { supabase } from '../../../lib/supabase';
 import { CreditCard, Award, Clock, CheckCircle, AlertCircle } from 'lucide-react';
@@ -27,6 +27,7 @@ interface Payment {
 
 const PaymentsPage: React.FC = () => {
   const { user, updateProfile } = useAuth();
+  const navigate = useNavigate();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -204,10 +205,7 @@ const PaymentsPage: React.FC = () => {
                 
                 <button
                   onClick={() => handleSelectPlan(plan.id)}
-                  className={`w-full py-2 rounded-md ${isPlanActive(plan.name) 
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                    : 'bg-primary text-white hover:bg-primary-dark transition-colors'}`}
-                  disabled={isPlanActive(plan.name)}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
                 >
                   {isPlanActive(plan.name) ? 'Plano Atual' : 'Selecionar Plano'}
                 </button>
