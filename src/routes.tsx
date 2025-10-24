@@ -21,6 +21,7 @@ import AdminApiKeysPage from './pages/admin/AdminApiKeysPage';
 import AdminReportsPage from './pages/admin/AdminReportsPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminSpecialAdsPage from './pages/admin/AdminSpecialAdsPage';
+import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
 import PaymentPage from './pages/payment/PaymentPage';
 import RenewPlanPage from './pages/payment/RenewPlanPage';
 import SupportPage from './pages/support/SupportPage';
@@ -104,6 +105,7 @@ const router = createBrowserRouter([
           { path: 'ads', element: <AdminAdsPage /> },
           { path: 'special-ads', element: <AdminSpecialAdsPage /> },
           { path: 'users', element: <AdminUsersPage /> },
+          { path: 'categories', element: <AdminCategoriesPage /> },
           { path: 'plans', element: <AdminPlansPage /> },
           { path: 'payments', element: <AdminPaymentsPage /> },
           { path: 'api-keys', element: <AdminApiKeysPage /> },
