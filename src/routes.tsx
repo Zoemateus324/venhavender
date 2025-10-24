@@ -22,6 +22,7 @@ import AdminReportsPage from './pages/admin/AdminReportsPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminSpecialAdsPage from './pages/admin/AdminSpecialAdsPage';
 import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
+import AdminAsaasValidationPage from './pages/admin/AdminAsaasValidationPage';
 import PaymentPage from './pages/payment/PaymentPage';
 import RenewPlanPage from './pages/payment/RenewPlanPage';
 import SupportPage from './pages/support/SupportPage';
@@ -108,6 +109,7 @@ const router = createBrowserRouter([
           { path: 'categories', element: <AdminCategoriesPage /> },
           { path: 'plans', element: <AdminPlansPage /> },
           { path: 'payments', element: <AdminPaymentsPage /> },
+          { path: 'asaas-validation', element: <AdminAsaasValidationPage /> },
           { path: 'api-keys', element: <AdminApiKeysPage /> },
           { path: 'reports', element: <AdminReportsPage /> },
           { path: 'settings', element: <AdminSettingsPage /> },

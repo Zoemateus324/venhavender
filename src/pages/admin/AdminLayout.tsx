@@ -14,7 +14,8 @@ import {
   LineChart,
   Cog,
   Star,
-  Tag
+  Tag,
+  Shield
 } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
@@ -49,6 +50,7 @@ const AdminLayout: React.FC = () => {
     { icon: <Tag size={20} />, label: 'Categorias', path: '/admin/categories' },
     { icon: <BarChart3 size={20} />, label: 'Planos', path: '/admin/plans' },
     { icon: <CreditCard size={20} />, label: 'Pagamentos', path: '/admin/payments' },
+    { icon: <Shield size={20} />, label: 'Validação Asaas', path: '/admin/asaas-validation' },
     { icon: <LineChart size={20} />, label: 'Relatórios', path: '/admin/reports' },
     { icon: <Key size={20} />, label: 'Chaves API', path: '/admin/api-keys' },
     { icon: <Cog size={20} />, label: 'Configurações', path: '/admin/settings' },
