@@ -49,6 +49,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
+    // Log the created PaymentIntent (safe to log id and status; avoid logging full secrets in prod)
+    console.log('[Stripe] Created PaymentIntent:', {
+      id: paymentIntent.id,
+      status: paymentIntent.status,
+      amount: paymentIntent.amount,
+    });
+
     return res.status(200).json({
       success: true,
       clientSecret: paymentIntent.client_secret,
