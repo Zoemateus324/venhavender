@@ -8,6 +8,14 @@ interface AdminRouteProps {
 export default function AdminRoute({ children }: AdminRouteProps) {
   const { user, loading } = useAuth();
 
+  // Log para depuração
+  console.log('AdminRoute - Estado do usuário:', { 
+    user, 
+    loading, 
+    isAdmin: user?.role === 'admin',
+    userRole: user?.role
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -17,6 +25,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
   }
 
   if (!user || user.role !== 'admin') {
+    console.log('Acesso negado ao painel admin - usuário não é admin:', user);
     return <Navigate to="/" replace />;
   }
 
