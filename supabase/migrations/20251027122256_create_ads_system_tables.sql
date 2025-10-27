@@ -330,3 +330,4 @@ INSERT INTO categories (name, description, icon, color) VALUES
 ('Serviços', 'Serviços diversos e profissionais', '🔧', '#6366F1'),
 ('Outros', 'Outros produtos e serviços', '📦', '#6B7280')
 ON CONFLICT (name) DO NOTHING;
+

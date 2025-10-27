@@ -52,7 +52,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Tentar buscar da tabela user_plans primeiro
+      // Primeiro, verificar se o usuário existe na tabela users para obter o role
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      // Tentar buscar da tabela user_plans
       const { data: userPlan, error: userPlanError } = await supabase
         .from('user_plans')
         .select('*')
@@ -65,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: userId,
           email: supabaseUser?.email || '',
           name: supabaseUser?.user_metadata?.name || 'Usuário',
-          role: 'user',
+          role: userData?.role || 'user', // Usar o role da tabela users se disponível
           plan_type: userPlan.plan_type || 'free',
           plan_status: userPlan.plan_status || 'inactive',
           plan_expires_at: userPlan.plan_expires_at
@@ -79,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: userId,
         email: supabaseUser?.email || '',
         name: supabaseUser?.user_metadata?.name || 'Usuário',
-        role: 'user',
+        role: userData?.role || 'user', // Usar o role da tabela users se disponível
         plan_type: 'free',
         plan_status: 'inactive',
         plan_expires_at: null

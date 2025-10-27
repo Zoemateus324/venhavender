@@ -339,3 +339,4 @@ ON CONFLICT (name) DO NOTHING;
 -- Este script cria todas as tabelas necessárias para o sistema de anúncios
 -- Execute este script completo no SQL Editor do Supabase Dashboard
 -- Após executar, o sistema de anúncios especiais funcionará corretamente
+

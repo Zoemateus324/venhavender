@@ -20,18 +20,16 @@ export default function HomePage() {
         const start = new Date();
         start.setDate(now.getDate() - 30);
 
-        // Tenta RPC de contagem no servidor somente se usuário autenticado
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session) {
-          const { data: rpcCount, error: rpcError } = await supabase
-            .rpc('count_unique_visitors', {
-              p_start: start.toISOString(),
-              p_end: now.toISOString(),
-            });
-          if (!rpcError && typeof rpcCount === 'number') {
-            setVisitorsCount(rpcCount);
-            return;
-          }
+        // Tenta RPC de contagem no servidor
+        const { data: rpcCount, error: rpcError } = await supabase
+          .rpc('count_unique_visitors', {
+            p_start: start.toISOString(),
+            p_end: now.toISOString(),
+          });
+
+        if (!rpcError && typeof rpcCount === 'number') {
+          setVisitorsCount(rpcCount);
+          return;
         }
 
         // Fallback local por device_id
@@ -177,7 +175,7 @@ export default function HomePage() {
 
       <section className="mb-12">
         
-        <SpecialAdsCarousel onAdClick={(ad) => navigate(`/ads/${ad.id}?special=1`)} />
+        <SpecialAdsCarousel onAdClick={(ad) => navigate(`/ads/${ad.id}`)} />
         <FooterAds />
       </section>
 
