@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, Eye, Heart, MessageCircle, Share2, Flag } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -30,6 +30,9 @@ interface AdDetails {
 const AdDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const urlParams = new URLSearchParams(location.search);
+  const urlSpecial = urlParams.get('special') === '1';
   const { user } = useAuth();
   const [ad, setAd] = useState<AdDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,8 @@ const AdDetailsPage: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [message, setMessage] = useState('');
+  const [isSpecialAd, setIsSpecialAd] = useState(urlSpecial);
+  const hasShownNotFoundRef = React.useRef(false);
 
   useEffect(() => {
     if (id) {
@@ -52,22 +57,164 @@ const AdDetailsPage: React.FC = () => {
   const fetchAdDetails = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('ads')
-        .select(`
-          *,
-          user:user_id (name, avatar_url, phone),
-          category:category_id (id, name)
-        `)
-        .eq('id', id)
-        .single();
+      if (urlSpecial) {
+        // Preferir carregar de special_ads quando marcado na URL
+        const { data: specialData } = await supabase
+          .from('special_ads')
+          .select(`
+            *
+          `)
+          .eq('id', id)
+          .maybeSingle();
 
-      if (error) throw error;
-      setAd(data);
+        if (specialData) {
+          const photos = [
+            (specialData as any).large_image_url,
+            (specialData as any).small_image_url,
+            (specialData as any).image_url,
+          ].filter(Boolean);
+
+          const mapped: any = {
+            id: (specialData as any).id,
+            title: (specialData as any).title,
+            description: (specialData as any).description || '',
+            price: Number((specialData as any).price || 0),
+            location: (specialData as any).location || '',
+            created_at: (specialData as any).created_at,
+            views: Number((specialData as any).views || 0),
+            images: photos,
+            photos,
+            user_id: (specialData as any).user_id,
+            user: (specialData as any).user || {},
+            category: (specialData as any).category || {},
+          };
+
+          setAd(mapped);
+          setIsSpecialAd(true);
+        } else {
+          // Se não for especial, tentar ads normalmente
+          const { data, error } = await supabase
+            .from('ads')
+            .select(`
+              *,
+              user:user_id (name, avatar_url, phone),
+              category:category_id (id, name)
+            `)
+            .eq('id', id)
+            .maybeSingle();
+
+          if (!error && data) {
+            setAd(data as any);
+            setIsSpecialAd(false);
+          } else {
+            if (!hasShownNotFoundRef.current) {
+              hasShownNotFoundRef.current = true;
+              toast.error('Anúncio não encontrado');
+            }
+            // Não redirecionar automaticamente; deixamos a UI de "não encontrado" renderizar
+            setAd(null);
+            setLoading(false);
+            return;
+          }
+        }
+      } else {
+        // Fluxo padrão: tentar ads primeiro, depois special_ads
+        const { data, error } = await supabase
+          .from('ads')
+          .select(`
+            *,
+            user:user_id (name, avatar_url, phone),
+            category:category_id (id, name)
+          `)
+          .eq('id', id)
+          .maybeSingle();
+
+        if (!error && data) {
+          setAd(data as any);
+          setIsSpecialAd(false);
+        } else {
+          const { data: specialData } = await supabase
+            .from('special_ads')
+            .select(`
+              *,
+              user:user_id (name, avatar_url, phone),
+              category:category_id (id, name)
+            `)
+            .eq('id', id)
+            .maybeSingle();
+
+          if (specialData) {
+            const photos = [
+              (specialData as any).large_image_url,
+              (specialData as any).small_image_url,
+              (specialData as any).image_url,
+            ].filter(Boolean);
+
+            const mapped: any = {
+              id: (specialData as any).id,
+              title: (specialData as any).title,
+              description: (specialData as any).description || '',
+              price: Number((specialData as any).price || 0),
+              location: (specialData as any).location || '',
+              created_at: (specialData as any).created_at,
+              views: Number((specialData as any).views || 0),
+              images: photos,
+              photos,
+              user_id: (specialData as any).user_id,
+              user: (specialData as any).user || {},
+              category: (specialData as any).category || {},
+            };
+
+            setAd(mapped);
+            setIsSpecialAd(true);
+          } else {
+            // Fallback: tentar ad simples + joins manuais
+            const { data: adOnly } = await supabase
+              .from('ads')
+              .select('*')
+              .eq('id', id)
+              .maybeSingle();
+
+            if (!adOnly) {
+              if (!hasShownNotFoundRef.current) {
+                hasShownNotFoundRef.current = true;
+                toast.error('Anúncio não encontrado');
+              }
+              // Não redirecionar automaticamente; deixamos a UI de "não encontrado" renderizar
+              setAd(null);
+              setLoading(false);
+              return;
+            }
+
+            let userData: any = null;
+            let categoryData: any = null;
+            if ((adOnly as any).user_id) {
+              const { data: userRow } = await supabase
+                .from('users')
+                .select('name, avatar_url, phone')
+                .eq('id', (adOnly as any).user_id)
+                .maybeSingle();
+              userData = userRow || null;
+            }
+            if ((adOnly as any).category_id) {
+              const { data: categoryRow } = await supabase
+                .from('categories')
+                .select('id, name')
+                .eq('id', (adOnly as any).category_id)
+                .maybeSingle();
+              categoryData = categoryRow || null;
+            }
+
+            setAd({ ...(adOnly as any), user: userData, category: categoryData });
+            setIsSpecialAd(false);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error fetching ad details:', error);
-      toast.error('Erro ao carregar detalhes do anúncio');
-      navigate('/ads');
+      if (!hasShownNotFoundRef.current) {
+        toast.error('Erro ao carregar detalhes do anúncio');
+      }
     } finally {
       setLoading(false);
     }
@@ -75,7 +222,15 @@ const AdDetailsPage: React.FC = () => {
 
   const incrementViewCount = async () => {
     try {
-      await supabase.rpc('increment_ad_view', { ad_id: id });
+      if (isSpecialAd) {
+        // Try extended function first; fallback to specific special ads function
+        const { error } = await supabase.rpc('increment_ad_view', { ad_id: id, is_special: true });
+        if (error) {
+          await supabase.rpc('increment_special_ad_view', { ad_id: id });
+        }
+      } else {
+        await supabase.rpc('increment_ad_view', { ad_id: id });
+      }
     } catch (error) {
       console.error('Error incrementing view count:', error);
     }

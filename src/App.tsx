@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './hooks/useAuth';
-import { SettingsProvider, useSettings } from './lib/settings';
+import { useAuth } from './hooks/useAuth';
+import { useSettings } from './lib/settings';
 import Header from './components/Header';
 import { Toaster } from 'react-hot-toast';
 import AuthModal from './components/AuthModal';
@@ -34,26 +34,26 @@ function AppContent() {
     const recordView = async () => {
       try {
         const pathname = location.pathname + (location.search || '');
-        // Try with "path"
-        const { error: errPath } = await supabase.from('page_views').insert([
+        // Prefer legacy column "page_path" first to avoid 400s in environments without "path"
+        const { error: errPagePathFirst } = await supabase.from('page_views').insert([
           {
             device_id: deviceId,
             user_id: user?.id || null,
-            path: pathname,
+            page_path: pathname,
           },
         ]);
-        if (errPath) {
-          // Fallback: try legacy column "page_path"
-          const { error: errPagePath } = await supabase.from('page_views').insert([
+        if (errPagePathFirst) {
+          // Fallback: try the alternate column "path"
+          const { error: errPathSecond } = await supabase.from('page_views').insert([
             {
               device_id: deviceId,
               user_id: user?.id || null,
-              page_path: pathname,
+              path: pathname,
             },
           ]);
-          if (errPagePath) {
+          if (errPathSecond) {
             // Last resort: log once for debugging
-            console.debug('page_views insert failed', { errPath, errPagePath });
+            console.debug('page_views insert failed', { errPagePathFirst, errPathSecond });
           }
         }
       } catch (e) {
@@ -147,7 +147,7 @@ function AppContent() {
         />
       )}
       
-      <Toaster position="top-center" />
+      <Toaster position="top-center" gutter={12} />
       
       <footer className="bg-gray-800 text-white py-8">
         <div className="container mx-auto px-4">
@@ -192,11 +192,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <SettingsProvider>
-        <AppContent />
-      </SettingsProvider>
-    </AuthProvider>
-  );
+  return <AppContent />;
 }

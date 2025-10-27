@@ -65,16 +65,18 @@ const AdminReportsPage: React.FC = () => {
       const periodStart = getPeriodStartDate();
       const periodEnd = new Date();
 
-      // Tenta usar RPC para contagem exata no servidor
-      const { data: rpcCount, error: rpcError } = await supabase
-        .rpc('count_unique_visitors', {
-          p_start: periodStart.toISOString(),
-          p_end: periodEnd.toISOString(),
-        });
-
-      if (!rpcError && typeof rpcCount === 'number') {
-        setVisitorsCount(rpcCount);
-        return;
+      // Tenta usar RPC para contagem exata no servidor apenas se autenticado
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session) {
+        const { data: rpcCount, error: rpcError } = await supabase
+          .rpc('count_unique_visitors', {
+            p_start: periodStart.toISOString(),
+            p_end: periodEnd.toISOString(),
+          });
+        if (!rpcError && typeof rpcCount === 'number') {
+          setVisitorsCount(rpcCount);
+          return;
+        }
       }
 
       // Fallback: contar por device_id no cliente
@@ -204,12 +206,24 @@ const AdminReportsPage: React.FC = () => {
       // Conversion rate = approved payments count / unique visitors in period
       // Get unique visitors for current period (try RPC, fallback to page_views)
       let currentVisitors = 0;
-      const { data: rpcNow, error: rpcNowErr } = await supabase.rpc('count_unique_visitors', {
-        p_start: periodStart.toISOString(),
-        p_end: new Date().toISOString(),
-      });
-      if (!rpcNowErr && typeof rpcNow === 'number') {
-        currentVisitors = rpcNow;
+      // Tenta RPC apenas se autenticado; caso contrário, fallback
+      const { data: sessionData2 } = await supabase.auth.getSession();
+      if (sessionData2?.session) {
+        const { data: rpcNow, error: rpcNowErr } = await supabase.rpc('count_unique_visitors', {
+          p_start: periodStart.toISOString(),
+          p_end: new Date().toISOString(),
+        });
+        if (!rpcNowErr && typeof rpcNow === 'number') {
+          currentVisitors = rpcNow;
+        } else {
+          const { data: pvNow, error: pvNowErr } = await supabase
+            .from('page_views')
+            .select('device_id')
+            .gte('created_at', periodStart.toISOString());
+          if (!pvNowErr) {
+            currentVisitors = new Set((pvNow || []).map((r: any) => r.device_id)).size;
+          }
+        }
       } else {
         const { data: pvNow, error: pvNowErr } = await supabase
           .from('page_views')
@@ -231,12 +245,22 @@ const AdminReportsPage: React.FC = () => {
 
       // Previous period conversion
       let prevVisitors = 0;
-      const { data: rpcPrev, error: rpcPrevErr } = await supabase.rpc('count_unique_visitors', {
-        p_start: previousPeriodStart.toISOString(),
-        p_end: periodStart.toISOString(),
-      });
-      if (!rpcPrevErr && typeof rpcPrev === 'number') {
-        prevVisitors = rpcPrev;
+      const { data: sessionData3 } = await supabase.auth.getSession();
+      if (sessionData3?.session) {
+        const { data: rpcPrev, error: rpcPrevErr } = await supabase.rpc('count_unique_visitors', {
+          p_start: previousPeriodStart.toISOString(),
+          p_end: periodStart.toISOString(),
+        });
+        if (!rpcPrevErr && typeof rpcPrev === 'number') {
+          prevVisitors = rpcPrev;
+        } else {
+          const { data: pvPrev } = await supabase
+            .from('page_views')
+            .select('device_id')
+            .gte('created_at', previousPeriodStart.toISOString())
+            .lt('created_at', periodStart.toISOString());
+          prevVisitors = new Set((pvPrev || []).map((r: any) => r.device_id)).size;
+        }
       } else {
         const { data: pvPrev } = await supabase
           .from('page_views')

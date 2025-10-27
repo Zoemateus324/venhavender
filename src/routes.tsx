@@ -1,5 +1,7 @@
 import React from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { AuthProvider } from './hooks/useAuth';
+import { SettingsProvider } from './lib/settings';
 import App from './App';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
@@ -122,5 +124,11 @@ const router = createBrowserRouter([
 ]);
 
 export default function Routes() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <SettingsProvider>
+        <RouterProvider router={router} />
+      </SettingsProvider>
+    </AuthProvider>
+  );
 }

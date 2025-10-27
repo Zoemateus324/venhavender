@@ -52,40 +52,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
+      // Tentar buscar da tabela user_plans primeiro
+      const { data: userPlan, error: userPlanError } = await supabase
+        .from('user_plans')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
-      if (error) {
-        // Se o usuário não existir na tabela 'users', crie um novo registro
-        if (error.code === 'PGRST116') {
-          const newUser = {
-            id: userId,
-            email: supabaseUser?.email || '',
-            name: supabaseUser?.user_metadata?.name || 'Usuário',
-            role: 'user',
-            plan_type: 'free',
-            plan_status: 'inactive'
-          };
-          
-          const { data: insertedUser, error: insertError } = await supabase
-            .from('users')
-            .insert([newUser])
-            .select()
-            .single();
-            
-          if (insertError) throw insertError;
-          setUser(insertedUser);
-          return;
-        } else {
-          throw error;
-        }
+      if (!userPlanError && userPlan) {
+        // Se encontrou na tabela user_plans, usar esses dados
+        setUser({
+          id: userId,
+          email: supabaseUser?.email || '',
+          name: supabaseUser?.user_metadata?.name || 'Usuário',
+          role: 'user',
+          plan_type: userPlan.plan_type || 'free',
+          plan_status: userPlan.plan_status || 'inactive',
+          plan_expires_at: userPlan.plan_expires_at
+        });
+        setLoading(false);
+        return;
       }
-      setUser(data);
+
+      // Se não encontrou na tabela user_plans, criar um usuário padrão
+      const defaultUser = {
+        id: userId,
+        email: supabaseUser?.email || '',
+        name: supabaseUser?.user_metadata?.name || 'Usuário',
+        role: 'user',
+        plan_type: 'free',
+        plan_status: 'inactive',
+        plan_expires_at: null
+      };
+
+      setUser(defaultUser);
+      
+      // Tentar criar registro na tabela user_plans (se existir)
+      try {
+        await supabase.from('user_plans').insert([{
+          user_id: userId,
+          plan_type: 'free',
+          plan_status: 'inactive'
+        }]);
+      } catch (insertError) {
+        // Ignorar erro se a tabela não existir ainda
+        console.debug('Could not create user_plans record:', insertError);
+      }
+      
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      // Em caso de erro, criar usuário padrão
+      setUser({
+        id: userId,
+        email: supabaseUser?.email || '',
+        name: supabaseUser?.user_metadata?.name || 'Usuário',
+        role: 'user',
+        plan_type: 'free',
+        plan_status: 'inactive',
+        plan_expires_at: null
+      });
     } finally {
       setLoading(false);
     }

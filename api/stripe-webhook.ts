@@ -104,13 +104,14 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     expiresAt.setDate(expiresAt.getDate() + plan.duration_days);
 
     const { error: userError } = await supabase
-      .from('users')
-      .update({
+      .from('user_plans')
+      .upsert({
+        user_id: user_id,
         plan_type: plan.name,
         plan_status: 'active',
         plan_expires_at: expiresAt.toISOString(),
-      })
-      .eq('id', user_id);
+        updated_at: new Date().toISOString(),
+      });
 
     if (userError) {
       console.error('Erro ao atualizar usuário:', userError);

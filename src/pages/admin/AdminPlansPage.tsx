@@ -155,7 +155,8 @@ export default function AdminPlansPage() {
         photo_limit: plan.photo_limit,
         direct_contact: plan.direct_contact,
         featured: plan.featured,
-        active: plan.active
+        active: plan.active,
+        updated_at: new Date().toISOString()
       };
       if (plan.asaas_payment_link) {
         updatePayload.asaas_payment_link = plan.asaas_payment_link;

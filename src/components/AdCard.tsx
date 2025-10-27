@@ -160,7 +160,7 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
 
         {/* Availability Status Badge */}
         {ad.availability_status && ad.availability_status !== 'available' && (
-          <div className={`absolute ${ad.type === 'header' ? 'top-12 left-20' : 'top-12 left-3'} bg-gradient-to-r ${
+          <div className={`absolute ${ad.type === 'header' ? 'top-14 left-20' : 'top-14 left-3'} bg-gradient-to-r ${
             ad.availability_status === 'sold' 
               ? 'from-red-500 to-red-600' 
               : 'from-yellow-500 to-yellow-600'

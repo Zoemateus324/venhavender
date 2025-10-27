@@ -201,7 +201,11 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           status: 'pending'
         };
 
-        await supabase.from('payments').insert([paymentData]);
+        const { error: paymentError } = await supabase.from('payments').insert([paymentData]);
+        if (paymentError) {
+          console.error('Erro ao criar registro de pagamento:', paymentError);
+          // Não falhar a criação do anúncio por causa do pagamento
+        }
       }
 
       // Create request for footer ads

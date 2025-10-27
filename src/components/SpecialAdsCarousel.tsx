@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Ad } from '../types';
@@ -57,8 +58,6 @@ export default function SpecialAdsCarousel({ onAdClick }: SpecialAdsCarouselProp
     return null;
   }
 
-  const currentAd = specialAds[currentSlide];
-
   return (
     <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 rounded-lg">
       <div className="flex items-center justify-between mb-6">
@@ -92,9 +91,9 @@ export default function SpecialAdsCarousel({ onAdClick }: SpecialAdsCarouselProp
         >
           {specialAds.map((ad) => (
             <div key={ad.id} className="w-full flex-shrink-0">
-              <div 
-                className="relative cursor-pointer group"
-                onClick={() => onAdClick?.(ad)}
+              <Link 
+                to={`/ads/${ad.id}?special=1`}
+                className="relative block group"
                 style={{ aspectRatio: '1135/350' }}
               >
                 {(ad.large_image_url || ad.image_url) ? (
@@ -120,7 +119,7 @@ export default function SpecialAdsCarousel({ onAdClick }: SpecialAdsCarouselProp
                     <p className="text-sm opacity-90 line-clamp-2">{ad.description}</p>
                   </div>
                 </div>
-              </div>
+              </Link>
             </div>
           ))}
         </div>
