@@ -124,13 +124,11 @@ export default function HomePage() {
       {/* Categories tiles removed by request */}
 
           {/* Special Ads Carousel */}
-          <section className="mb-12">
-            <SpecialAdsCarousel onAdClick={(ad) => navigate(`/ads/${ad.id}`)} />
-          </section>
+          
 
           {/* Featured */}
           <section className="mb-12">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Anúncios em Destaque</h2>
+            
             <FeaturedAds />
           </section>
 
@@ -176,7 +174,8 @@ export default function HomePage() {
       </section>
 
       <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Anúncios Especiais</h2>
+        
+        <SpecialAdsCarousel onAdClick={(ad) => navigate(`/ads/${ad.id}`)} />
         <FooterAds />
       </section>
 
