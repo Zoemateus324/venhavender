@@ -149,6 +149,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   useEffect(() => {
     const createPaymentIntent = async () => {
       try {
+        // Usar o caminho relativo para aproveitar o proxy do Vite
         const response = await fetch('/api/stripe-create-payment-intent', {
           method: 'POST',
           headers: {

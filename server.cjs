@@ -1,13 +1,23 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+// Carregar variáveis de ambiente com base no ambiente
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: '.env.production' });
+} else {
+  dotenv.config({ path: '.env.local' });
+}
 
 const app = express();
 const PORT = 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://venhavender.com'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Importar e usar as rotas da API

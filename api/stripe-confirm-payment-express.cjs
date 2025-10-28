@@ -1,6 +1,14 @@
 const express = require('express');
 const Stripe = require('stripe');
 const router = express.Router();
+const dotenv = require('dotenv');
+
+// Carregar variáveis de ambiente com base no ambiente
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: '.env.production' });
+} else {
+  dotenv.config({ path: '.env.local' });
+}
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-09-30.clover',
