@@ -18,6 +18,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
   const [loading, setLoading] = useState(false);
   const [ownerId, setOwnerId] = useState<string>('');
   const [allUsers, setAllUsers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [footerImages, setFooterImages] = useState<{ small: string | null; large: string | null }>({ small: null, large: null });
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -125,6 +126,31 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
     }
   };
 
+  const uploadToStorage = async (file: File, pathPrefix: string) => {
+    const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+    const filePath = `${pathPrefix}/${ownerId || user?.id}/${fileName}`;
+    const { error: uploadError } = await supabase.storage.from('ads').upload(filePath, file, { upsert: false });
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from('ads').getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
+  const handleUploadFooterImage = async (files: FileList | null, size: 'small' | 'large') => {
+    if (!files || !files[0]) return;
+    try {
+      setLoading(true);
+      const publicUrl = await uploadToStorage(files[0], 'special-ads');
+      setFooterImages(prev => ({ ...prev, [size]: publicUrl }));
+      toast.success(`Imagem ${size === 'small' ? 'pequena' : 'grande'} enviada!`);
+    } catch (error) {
+      console.error('Erro ao enviar imagem do rodapé:', error);
+      toast.error('Falha no upload da imagem do rodapé.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const removePhoto = (index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -162,37 +188,70 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
 
     setLoading(true);
     try {
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + getAdDuration());
+      if (formData.type === 'footer') {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
 
-      const adData = {
-        user_id: ownerId || user.id,
-        category_id: formData.category_id,
-        type: formData.type,
-        ad_type: formData.ad_type,
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price) || 0,
-        photos: formData.photos,
-        location: formData.location,
-        contact_info: formData.contact_info,
-        plan_id: formData.plan_id || null,
-        end_date: endDate.toISOString(),
-        status: formData.type === 'footer' ? 'pending' : 'active',
-        availability_status: formData.availability_status,
-        max_exposures: formData.type === 'footer' ? formData.footer_exposures : 0,
-        admin_approved: formData.type !== 'footer'
-      };
+        const { data: createdSpecial, error: specialError } = await supabase
+          .from('special_ads')
+          .insert([
+            {
+              title: formData.title,
+              description: formData.description,
+              price: getAdPrice(),
+              status: 'active',
+              expires_at: expiresAt.toISOString(),
+              image_url: footerImages.small || formData.photos[0] || null,
+              small_image_url: footerImages.small || formData.photos[0] || null,
+              large_image_url: footerImages.large || formData.photos[0] || null,
+              
+            }
+          ])
+          .select('id')
+          .single();
 
-      const { error } = await supabase
-        .from('ads')
-        .insert([adData]);
+        if (specialError) throw specialError;
 
-      if (error) throw error;
+        // Redirecionar para checkout do Stripe com os dados do anúncio de rodapé
+        const amount = getAdPrice();
+        const specialAdId = createdSpecial?.id;
+        if (specialAdId) {
+          const exposures = formData.footer_exposures || 720;
+          window.location.href = `/payment?special_ad_id=${encodeURIComponent(specialAdId)}&amount=${encodeURIComponent(amount.toFixed(2))}&exposures=${encodeURIComponent(String(exposures))}`;
+        }
+      } else {
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + getAdDuration());
+
+        const adData = {
+          user_id: ownerId || user.id,
+          category_id: formData.category_id,
+          type: formData.type,
+          ad_type: formData.ad_type,
+          title: formData.title,
+          description: formData.description,
+          price: parseFloat(formData.price) || 0,
+          photos: formData.photos,
+          location: formData.location,
+          contact_info: formData.contact_info,
+          plan_id: formData.plan_id || null,
+          end_date: endDate.toISOString(),
+          status: 'active',
+          availability_status: formData.availability_status,
+          max_exposures: 0,
+          admin_approved: true
+        };
+
+        const { error } = await supabase
+          .from('ads')
+          .insert([adData]);
+
+        if (error) throw error;
+      }
 
       // If it's a paid plan, create payment record
       const planPrice = getAdPrice();
-      if (planPrice > 0) {
+      if (formData.type !== 'footer' && planPrice > 0) {
         const paymentData = {
           user_id: ownerId || user.id,
           plan_id: formData.plan_id || null,
@@ -206,21 +265,6 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           console.error('Erro ao criar registro de pagamento:', paymentError);
           // Não falhar a criação do anúncio por causa do pagamento
         }
-      }
-
-      // Create request for footer ads
-      if (formData.type === 'footer') {
-        const requestData = {
-          user_id: ownerId || user.id,
-          ad_type: 'footer',
-          duration_days: 30,
-          materials: formData.footer_art_needed ? 'Arte necessária' : 'Arte própria',
-          observations: `${formData.footer_exposures} exposições`,
-          proposed_value: getAdPrice(),
-          status: 'pending'
-        };
-
-        await supabase.from('requests').insert([requestData]);
       }
 
       onSuccess();
@@ -533,6 +577,25 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
 
                   {formData.type === 'footer' && (
                     <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Imagem pequena (rodapé)</label>
+                          {footerImages.small && (
+                            <img src={footerImages.small} alt="Imagem pequena" className="w-full h-24 object-cover rounded mb-2" />
+                          )}
+                          <input type="file" accept="image/*" onChange={(e) => handleUploadFooterImage(e.target.files, 'small')} />
+                          <p className="text-xs text-gray-500 mt-1">Recomendado: 300x100px (ou proporcional)</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Imagem grande (destaque)</label>
+                          {footerImages.large && (
+                            <img src={footerImages.large} alt="Imagem grande" className="w-full h-24 object-cover rounded mb-2" />
+                          )}
+                          <input type="file" accept="image/*" onChange={(e) => handleUploadFooterImage(e.target.files, 'large')} />
+                          <p className="text-xs text-gray-500 mt-1">Recomendado: 1135x350px (ou proporcional)</p>
+                        </div>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Quantidade de exposições

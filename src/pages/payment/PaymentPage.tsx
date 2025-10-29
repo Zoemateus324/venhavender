@@ -27,14 +27,31 @@ const PaymentPage: React.FC = () => {
   // Get plan ID from URL or query params
   const params = new URLSearchParams(window.location.search);
   const planId = params.get('plan_id');
+  const specialAdId = params.get('special_ad_id');
+  const customAmountParam = params.get('amount');
+  const customAmount = customAmountParam ? parseFloat(customAmountParam) : null;
+  const exposuresParam = params.get('exposures');
+  const footerExposures = exposuresParam ? parseInt(exposuresParam) : 720;
 
   useEffect(() => {
     if (planId) {
       fetchPlanDetails(planId);
+    } else if (specialAdId && customAmount && !isNaN(customAmount)) {
+      // Configurar pagamento customizado para anúncio de rodapé
+      setSelectedPlan({
+        id: 'footer-ad',
+        name: 'Anúncio de Rodapé',
+        price: customAmount,
+        description: 'Exibição no rodapé do site',
+        features: [],
+        max_images: 0,
+        duration_days: 30
+      });
+      setLoading(false);
     } else {
       setLoading(false);
-      toast.error('Nenhum plano selecionado.');
-      navigate('/dashboard/plans');
+      toast.error('Nenhum item selecionado para pagamento.');
+      navigate('/dashboard');
     }
   }, [planId]);
 
@@ -77,41 +94,93 @@ const PaymentPage: React.FC = () => {
     try {
       setProcessingPayment(true);
 
-      // Create payment record
+      // Create payment record (plano ou anúncio de rodapé)
+      const paymentPayload: any = {
+        user_id: user.id,
+        amount: selectedPlan.price,
+        status: 'completed',
+        payment_method: 'stripe',
+        stripe_payment_intent_id: paymentIntent.id,
+        invoice_url: `https://dashboard.stripe.com/payments/${paymentIntent.id}`,
+      };
+      if (planId) {
+        paymentPayload.plan_id = selectedPlan.id;
+      }
+      if (specialAdId) {
+        paymentPayload.metadata = { special_ad_id: specialAdId, type: 'footer_ad' };
+      }
+
       const { error: paymentError } = await supabase
         .from('payments')
-        .insert([
-          {
-            user_id: user.id,
-            plan_id: selectedPlan.id,
-            amount: selectedPlan.price,
-            status: 'completed',
-            payment_method: 'stripe',
-            stripe_payment_intent_id: paymentIntent.id,
-            invoice_url: `https://dashboard.stripe.com/payments/${paymentIntent.id}`,
-          }
-        ]);
+        .insert([paymentPayload]);
 
       if (paymentError) throw paymentError;
 
-      // Update user's plan
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + selectedPlan.duration_days);
+      // Se for anúncio de rodapé, criar registro em ads (tipo footer) somente após pagamento
+      if (specialAdId) {
+        // Buscar dados do special_ad para compor o anúncio
+        const { data: specialAd, error: specialFetchError } = await supabase
+          .from('special_ads')
+          .select('id, title, description, price, image_url, small_image_url, large_image_url')
+          .eq('id', specialAdId)
+          .single();
 
-      const { error: userError } = await supabase
-        .from('user_plans')
-        .upsert({
-          user_id: user.id,
-          plan_type: selectedPlan.name,
-          plan_status: 'active',
-          plan_expires_at: expiresAt.toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+        if (specialFetchError) throw specialFetchError;
 
-      if (userError) throw userError;
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 30);
+
+        const photos: string[] = [];
+        if (specialAd?.small_image_url) photos.push(specialAd.small_image_url);
+        else if (specialAd?.image_url) photos.push(specialAd.image_url);
+        else if (specialAd?.large_image_url) photos.push(specialAd.large_image_url);
+
+        const { error: adInsertError } = await supabase
+          .from('ads')
+          .insert([
+            {
+              user_id: user.id,
+              category_id: null,
+              type: 'footer',
+              ad_type: null,
+              title: specialAd?.title || 'Anúncio de Rodapé',
+              description: specialAd?.description || '',
+              price: selectedPlan.price,
+              photos,
+              location: '',
+              contact_info: {},
+              plan_id: null,
+              end_date: endDate.toISOString(),
+              status: 'active',
+              availability_status: 'available',
+              max_exposures: footerExposures,
+              admin_approved: true
+            }
+          ]);
+
+        if (adInsertError) throw adInsertError;
+      }
+
+      // Atualizar plano do usuário apenas quando for compra de plano
+      if (planId) {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + selectedPlan.duration_days);
+
+        const { error: userError } = await supabase
+          .from('user_plans')
+          .upsert({
+            user_id: user.id,
+            plan_type: selectedPlan.name,
+            plan_status: 'active',
+            plan_expires_at: expiresAt.toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (userError) throw userError;
+      }
 
       toast.success('Pagamento processado com sucesso!');
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
       console.error('Erro ao processar pagamento:', error);
       toast.error('Erro ao processar pagamento. Tente novamente.');
@@ -137,13 +206,13 @@ const PaymentPage: React.FC = () => {
     return (
       <div className="text-center py-8">
         <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Plano não encontrado</h2>
-        <p className="text-gray-600 mb-4">O plano selecionado não está disponível.</p>
+        <h2 className="text-xl font-semibold mb-2">Item de pagamento não encontrado</h2>
+        <p className="text-gray-600 mb-4">O item selecionado não está disponível.</p>
         <button
-          onClick={() => navigate('/dashboard/plans')}
+          onClick={() => navigate('/dashboard')}
           className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
         >
-          Voltar para Planos
+          Voltar
         </button>
       </div>
     );
@@ -166,8 +235,9 @@ const PaymentPage: React.FC = () => {
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
               metadata={{
-                plan_id: selectedPlan.id,
-                plan_name: selectedPlan.name,
+                ...(planId
+                  ? { plan_id: selectedPlan.id, plan_name: selectedPlan.name }
+                  : { special_ad_id: specialAdId || '', item_name: 'Anúncio de Rodapé' }),
                 user_id: user?.id || '',
               }}
             />
@@ -181,7 +251,7 @@ const PaymentPage: React.FC = () => {
             
             <div className="border-t border-gray-200 pt-4 mb-4">
               <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Plano</span>
+                <span className="text-gray-600">Item</span>
                 <span className="font-medium">{selectedPlan.name}</span>
               </div>
               
@@ -191,8 +261,12 @@ const PaymentPage: React.FC = () => {
               </div>
               
               <div className="flex justify-between">
-                <span className="text-gray-600">Imagens</span>
-                <span>Até {selectedPlan.max_images}</span>
+                {planId && (
+                  <>
+                    <span className="text-gray-600">Imagens</span>
+                    <span>Até {selectedPlan.max_images}</span>
+                  </>
+                )}
               </div>
             </div>
             
@@ -207,7 +281,9 @@ const PaymentPage: React.FC = () => {
               <div className="flex items-start">
                 <CheckCircle size={20} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-gray-600">
-                  Seu plano será ativado imediatamente após a confirmação do pagamento.
+                  {planId
+                    ? 'Seu plano será ativado imediatamente após a confirmação do pagamento.'
+                    : 'Seu anúncio de rodapé será exibido conforme a política após o pagamento.'}
                 </p>
               </div>
             </div>

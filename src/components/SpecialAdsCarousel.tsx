@@ -2,14 +2,25 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Ad } from '../types';
+
+interface SpecialAd {
+  id: string;
+  title: string;
+  description?: string;
+  price?: number;
+  status?: string;
+  expires_at?: string;
+  image_url?: string;
+  small_image_url?: string;
+  large_image_url?: string;
+}
 
 interface SpecialAdsCarouselProps {
-  onAdClick?: (ad: Ad) => void;
+  onAdClick?: (ad: SpecialAd) => void;
 }
 
 export default function SpecialAdsCarousel({ onAdClick }: SpecialAdsCarouselProps) {
-  const [specialAds, setSpecialAds] = useState<Ad[]>([]);
+  const [specialAds, setSpecialAds] = useState<SpecialAd[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +34,7 @@ export default function SpecialAdsCarousel({ onAdClick }: SpecialAdsCarouselProp
         .from('special_ads')
         .select('*')
         .eq('status', 'active')
-        .or(`expires_at.is.null,expires_at.gte."${nowIso}"`)
+        .or(`expires_at.is.null,expires_at.gte.${nowIso}`)
         .order('created_at', { ascending: false })
         .limit(10);
 

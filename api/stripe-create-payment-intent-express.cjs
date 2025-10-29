@@ -11,7 +11,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-09-30.clover',
+  apiVersion: '2024-06-20',
 });
 
 router.post('/stripe-create-payment-intent', async (req, res) => {
