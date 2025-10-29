@@ -541,6 +541,56 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
                 ))}
               </div>
 
+              {/* Upload de imagens adicional conforme plano (prata/ouro) */}
+              {selectedPlan && (selectedPlan.photo_limit > 1 || selectedPlan.photo_limit === 999) && (
+                <div className="mt-2 border rounded-lg p-6 bg-white">
+                  <h4 className="font-semibold text-lg mb-2">Imagens do anúncio</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {selectedPlan.photo_limit === 10
+                      ? 'Plano Ouro: imagens ilimitadas.'
+                      : `Plano permite até ${selectedPlan.photo_limit} imagens.`}
+                  </p>
+
+                  <div className="space-y-3">
+                    {formData.photos.map((photo, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <img
+                          src={photo}
+                          alt={`Foto ${index + 1}`}
+                          className="w-16 h-16 object-cover rounded"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/64?text=Erro';
+                          }}
+                        />
+                        <input
+                          type="text"
+                          readOnly
+                          value={photo}
+                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="p-2 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {(selectedPlan.photo_limit === 999 || formData.photos.length < selectedPlan.photo_limit) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Enviar imagens</label>
+                        <input type="file" multiple accept="image/*" onChange={(e) => handleUploadImages(e.target.files)} />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Limite: {selectedPlan.photo_limit === 999 ? 'ilimitadas' : `${selectedPlan.photo_limit}`} imagem(ns)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Footer Ad Option */}
               <div className="border-t pt-6">
                 <h4 className="font-semibold text-lg mb-4">Anúncio de Rodapé</h4>
