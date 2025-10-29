@@ -28,6 +28,7 @@ const PaymentPage: React.FC = () => {
   const params = new URLSearchParams(window.location.search);
   const planId = params.get('plan_id');
   const specialAdId = params.get('special_ad_id');
+  const isSpecialAdFlow = params.get('special_ad') === '1' || !!specialAdId;
   const customAmountParam = params.get('amount');
   const customAmount = customAmountParam ? parseFloat(customAmountParam) : null;
   const exposuresParam = params.get('exposures');
@@ -36,7 +37,7 @@ const PaymentPage: React.FC = () => {
   useEffect(() => {
     if (planId) {
       fetchPlanDetails(planId);
-    } else if (specialAdId && customAmount && !isNaN(customAmount)) {
+    } else if (isSpecialAdFlow && customAmount && !isNaN(customAmount)) {
       // Configurar pagamento customizado para anúncio de rodapé
       setSelectedPlan({
         id: 'footer-ad',
@@ -106,8 +107,8 @@ const PaymentPage: React.FC = () => {
       if (planId) {
         paymentPayload.plan_id = selectedPlan.id;
       }
-      if (specialAdId) {
-        paymentPayload.metadata = { special_ad_id: specialAdId, type: 'footer_ad' };
+      if (isSpecialAdFlow) {
+        paymentPayload.metadata = { type: 'footer_ad' };
       }
 
       const { error: paymentError } = await supabase
@@ -116,49 +117,55 @@ const PaymentPage: React.FC = () => {
 
       if (paymentError) throw paymentError;
 
-      // Se for anúncio de rodapé, criar registro em ads (tipo footer) somente após pagamento
-      if (specialAdId) {
-        // Buscar dados do special_ad para compor o anúncio
-        const { data: specialAd, error: specialFetchError } = await supabase
-          .from('special_ads')
-          .select('id, title, description, price, image_url, small_image_url, large_image_url')
-          .eq('id', specialAdId)
-          .single();
-
-        if (specialFetchError) throw specialFetchError;
-
+      // Se for anúncio de rodapé, criar registro apenas conforme necessidade de arte
+      if (isSpecialAdFlow) {
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + 30);
 
-        const photos: string[] = [];
-        if (specialAd?.small_image_url) photos.push(specialAd.small_image_url);
-        else if (specialAd?.image_url) photos.push(specialAd.image_url);
-        else if (specialAd?.large_image_url) photos.push(specialAd.large_image_url);
+        let payload: any = null;
+        try {
+          const raw = sessionStorage.getItem('pending_special_ad');
+          if (raw) payload = JSON.parse(raw);
+        } catch {}
 
-        const { error: adInsertError } = await supabase
-          .from('ads')
-          .insert([
-            {
-              user_id: user.id,
-              category_id: null,
-              type: 'footer',
-              ad_type: null,
-              title: specialAd?.title || 'Anúncio de Rodapé',
-              description: specialAd?.description || '',
-              price: selectedPlan.price,
-              photos,
-              location: '',
-              contact_info: {},
-              plan_id: null,
-              end_date: endDate.toISOString(),
-              status: 'active',
-              availability_status: 'available',
-              max_exposures: footerExposures,
-              admin_approved: true
-            }
-          ]);
+        if (payload?.footer_art_needed) {
+          // Criar solicitação para o admin produzir a arte e não publicar ainda
+          const { error: requestError } = await supabase
+            .from('requests')
+            .insert([
+              {
+                user_id: user.id,
+                ad_type: 'footer',
+                duration_days: 30,
+                materials: 'Arte necessária',
+                observations: `${footerExposures} exposições — aguardando confecção de arte`,
+                proposed_value: selectedPlan.price,
+                status: 'pending'
+              }
+            ]);
 
-        if (adInsertError) throw adInsertError;
+          if (requestError) throw requestError;
+        } else {
+          // Sem confecção: publicar direto em special_ads
+          const toInsert = {
+            title: payload?.title || 'Anúncio de Rodapé',
+            description: payload?.description || '',
+            price: selectedPlan.price,
+            status: 'active',
+            expires_at: endDate.toISOString(),
+            image_url: payload?.image_url || null,
+            small_image_url: payload?.small_image_url || payload?.image_url || null,
+            large_image_url: payload?.large_image_url || null
+          };
+
+          const { error: specialInsertError } = await supabase
+            .from('special_ads')
+            .insert([toInsert]);
+
+          if (specialInsertError) throw specialInsertError;
+        }
+
+        try { sessionStorage.removeItem('pending_special_ad'); } catch {}
       }
 
       // Atualizar plano do usuário apenas quando for compra de plano

@@ -189,36 +189,24 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
     setLoading(true);
     try {
       if (formData.type === 'footer') {
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 30);
+        // Guardar dados temporários do anúncio especial para criar após pagamento
+        const pending = {
+          title: formData.title,
+          description: formData.description,
+          price: getAdPrice(),
+          small_image_url: footerImages.small || formData.photos[0] || null,
+          large_image_url: footerImages.large || formData.photos[0] || null,
+          image_url: footerImages.small || formData.photos[0] || null,
+          exposures: formData.footer_exposures || 720,
+          footer_art_needed: formData.footer_art_needed === true
+        };
+        try {
+          sessionStorage.setItem('pending_special_ad', JSON.stringify(pending));
+        } catch {}
 
-        const { data: createdSpecial, error: specialError } = await supabase
-          .from('special_ads')
-          .insert([
-            {
-              title: formData.title,
-              description: formData.description,
-              price: getAdPrice(),
-              status: 'active',
-              expires_at: expiresAt.toISOString(),
-              image_url: footerImages.small || formData.photos[0] || null,
-              small_image_url: footerImages.small || formData.photos[0] || null,
-              large_image_url: footerImages.large || formData.photos[0] || null,
-              
-            }
-          ])
-          .select('id')
-          .single();
-
-        if (specialError) throw specialError;
-
-        // Redirecionar para checkout do Stripe com os dados do anúncio de rodapé
         const amount = getAdPrice();
-        const specialAdId = createdSpecial?.id;
-        if (specialAdId) {
-          const exposures = formData.footer_exposures || 720;
-          window.location.href = `/payment?special_ad_id=${encodeURIComponent(specialAdId)}&amount=${encodeURIComponent(amount.toFixed(2))}&exposures=${encodeURIComponent(String(exposures))}`;
-        }
+        const exposures = formData.footer_exposures || 720;
+        window.location.href = `/payment?special_ad=1&amount=${encodeURIComponent(amount.toFixed(2))}&exposures=${encodeURIComponent(String(exposures))}`;
       } else {
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + getAdDuration());

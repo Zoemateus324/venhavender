@@ -41,10 +41,118 @@ const AdminSpecialAdsPage: React.FC = () => {
   const [smallPhotos, setSmallPhotos] = useState<string[]>([]);
   const [largePhotos, setLargePhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [pendingArtCount, setPendingArtCount] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [showDesignModal, setShowDesignModal] = useState(false);
+  const [designForRequest, setDesignForRequest] = useState<any | null>(null);
+  const [designForm, setDesignForm] = useState({
+    title: '',
+    description: '',
+    price: 0,
+    small_image_url: '',
+    large_image_url: ''
+  });
 
   useEffect(() => {
     fetchSpecialAds();
+    fetchPendingArtRequests();
   }, []);
+
+  const fetchPendingArtRequests = async () => {
+    try {
+      const { data, count, error } = await supabase
+        .from('requests')
+        .select('*', { count: 'exact' })
+        .eq('ad_type', 'footer')
+        .eq('status', 'pending')
+        .ilike('materials', '%Arte%')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingArtCount(count || 0);
+      setPendingRequests(data || []);
+    } catch (error) {
+      // silencioso
+    }
+  };
+
+  const openDesignModal = (request: any) => {
+    setDesignForRequest(request);
+    setDesignForm({
+      title: 'Anúncio de Rodapé',
+      description: request?.observations || '',
+      price: request?.proposed_value || 0,
+      small_image_url: '',
+      large_image_url: ''
+    });
+    setShowDesignModal(true);
+  };
+
+  const handleDesignImageUpload = async (files: FileList | null, type: 'small' | 'large') => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `ads_especiais/${type}/${fileName}`;
+      const { error: uploadError } = await supabase.storage.from('ads_especiais').upload(filePath, file);
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from('ads_especiais').getPublicUrl(filePath);
+      if (type === 'small') {
+        setDesignForm(prev => ({ ...prev, small_image_url: data.publicUrl }));
+      } else {
+        setDesignForm(prev => ({ ...prev, large_image_url: data.publicUrl }));
+      }
+      toast.success('Imagem enviada com sucesso!');
+    } catch (e) {
+      toast.error('Erro ao enviar imagem.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCreateDesignAndActivate = async () => {
+    if (!designForRequest) return;
+    try {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
+      const { error: insertError } = await supabase
+        .from('special_ads')
+        .insert([
+          {
+            title: designForm.title,
+            description: designForm.description,
+            price: designForm.price,
+            status: 'active',
+            expires_at: expiresAt.toISOString(),
+            image_url: designForm.small_image_url || null,
+            small_image_url: designForm.small_image_url || null,
+            large_image_url: designForm.large_image_url || null,
+            created_by: user?.id || null
+          }
+        ]);
+
+      if (insertError) throw insertError;
+
+      const { error: updateReqError } = await supabase
+        .from('requests')
+        .update({ status: 'completed' })
+        .eq('id', designForRequest.id);
+
+      if (updateReqError) throw updateReqError;
+
+      toast.success('Confecção criada e anúncio ativado!');
+      setShowDesignModal(false);
+      setDesignForRequest(null);
+      await fetchSpecialAds();
+      await fetchPendingArtRequests();
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao criar confecção/ativar anúncio.');
+    }
+  };
 
   const fetchSpecialAds = async () => {
     try {
@@ -222,6 +330,11 @@ const AdminSpecialAdsPage: React.FC = () => {
 
   return (
     <div>
+      {pendingArtCount > 0 && (
+        <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-3">
+          <span className="font-medium">Precisa de confecção</span> — {pendingArtCount} solicitação(ões) pendente(s) para anúncios de rodapé.
+        </div>
+      )}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Anúncios Especiais</h1>
@@ -234,6 +347,51 @@ const AdminSpecialAdsPage: React.FC = () => {
           <Plus size={20} />
           Criar Anúncio Especial
         </button>
+      </div>
+
+      {/* Pending Requests List */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Solicitações Pendentes de Confecção</h2>
+          <span className="text-sm text-gray-500">{pendingRequests.length} pendente(s)</span>
+        </div>
+        {pendingRequests.length === 0 ? (
+          <div className="p-6 text-sm text-gray-500">Nenhuma solicitação pendente.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solicitação</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materiais</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observações</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {pendingRequests.map((req) => (
+                  <tr key={req.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-700">#{String(req.id).slice(0,8)}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">Precisa de confecção</span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{req.observations}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(req.proposed_value || 0)}</td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => openDesignModal(req)}
+                        className="px-3 py-1.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm"
+                      >
+                        Criar confecção
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -616,6 +774,77 @@ const AdminSpecialAdsPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDesignModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Criar Confecção e Ativar</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                <input
+                  value={designForm.title}
+                  onChange={(e) => setDesignForm(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={designForm.price}
+                  onChange={(e) => setDesignForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <textarea
+                  rows={3}
+                  value={designForm.description}
+                  onChange={(e) => setDesignForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Imagem pequena</label>
+                {designForm.small_image_url && (
+                  <img src={designForm.small_image_url} alt="small" className="w-full h-24 object-cover rounded mb-2" />
+                )}
+                <input type="file" accept="image/*" onChange={(e) => handleDesignImageUpload(e.target.files, 'small')} />
+                <p className="text-xs text-gray-500 mt-1">Recomendado: 300x100px</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Imagem grande</label>
+                {designForm.large_image_url && (
+                  <img src={designForm.large_image_url} alt="large" className="w-full h-24 object-cover rounded mb-2" />
+                )}
+                <input type="file" accept="image/*" onChange={(e) => handleDesignImageUpload(e.target.files, 'large')} />
+                <p className="text-xs text-gray-500 mt-1">Recomendado: 1135x350px</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => { setShowDesignModal(false); setDesignForRequest(null); }}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateDesignAndActivate}
+                disabled={uploading || !designForm.title || !designForm.small_image_url}
+                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50"
+              >
+                Criar e ativar
+              </button>
+            </div>
           </div>
         </div>
       )}
