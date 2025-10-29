@@ -235,25 +235,15 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           .insert([adData]);
 
         if (error) throw error;
-      }
-
-      // If it's a paid plan, create payment record
-      const planPrice = getAdPrice();
-      if (formData.type !== 'footer' && planPrice > 0) {
-        const paymentData = {
-          user_id: ownerId || user.id,
-          plan_id: formData.plan_id || null,
-          amount: planPrice,
-          payment_method: 'pending',
-          status: 'pending'
-        };
-
-        const { error: paymentError } = await supabase.from('payments').insert([paymentData]);
-        if (paymentError) {
-          console.error('Erro ao criar registro de pagamento:', paymentError);
-          // Não falhar a criação do anúncio por causa do pagamento
+        // Redirecionar para pagamento do plano, se houver valor
+        const chosenPlan = plans.find(p => p.id === formData.plan_id);
+        if (chosenPlan && chosenPlan.price > 0) {
+          window.location.href = `/payment?plan_id=${encodeURIComponent(chosenPlan.id)}`;
+          return; // evitar continuar o fluxo local
         }
       }
+
+      // Fluxo gratuito ou rodapé já tratado
 
       onSuccess();
       onClose();
