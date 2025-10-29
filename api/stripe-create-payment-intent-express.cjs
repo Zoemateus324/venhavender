@@ -33,14 +33,22 @@ router.post('/stripe-create-payment-intent', async (req, res) => {
     }
 
     // Criar Payment Intent
-    const paymentIntent = await stripe.paymentIntents.create({
+    const params = {
       amount: Math.round(amount), // Já vem em centavos do frontend
       currency,
       metadata,
       automatic_payment_methods: {
         enabled: true,
       },
-    });
+    };
+
+    if ((currency || '').toLowerCase() === 'brl') {
+      params.payment_method_types = ['card', 'pix'];
+    } else {
+      params.payment_method_types = ['card'];
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(params);
 
     return res.status(200).json({
       success: true,
