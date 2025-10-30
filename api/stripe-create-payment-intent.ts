@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       currency,
       metadata,
       // Usar lista explícita de métodos (não combinar com automatic_payment_methods)
-      payment_method_types: (currency || '').toLowerCase() === 'brl' ? ['card', 'boleto'] : ['card'],
+      payment_method_types: (currency || '').toLowerCase() === 'brl' ? ['card', 'pix'] : ['card'],
     };
 
     const paymentIntent = await stripe.paymentIntents.create(params);
