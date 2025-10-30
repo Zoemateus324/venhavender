@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       metadata,
       payment_method_types:
         currency.toLowerCase() === 'brl'
-          ? ['card', 'pix', 'ticket']
+          ? ['card', 'pix']
           : ['card'],
     };
 
