@@ -38,7 +38,7 @@ router.post('/stripe-create-payment-intent', async (req, res) => {
       currency,
       metadata,
       // Usar lista explícita de métodos (não combinar com automatic_payment_methods)
-      payment_method_types: ((currency || '').toLowerCase() === 'brl') ? ['card', 'pix'] : ['card']
+      payment_method_types: ((currency || '').toLowerCase() === 'brl') ? ['card', 'boleto'] : ['card']
     };
 
     const paymentIntent = await stripe.paymentIntents.create(params);

@@ -130,7 +130,7 @@ const PaymentForm: React.FC<{
 
       <div className="text-xs text-gray-500 text-center">
         <p>Pagamentos processados com segurança pelo Stripe</p>
-        <p>Suportamos cartões de crédito, débito e PIX</p>
+        <p>Suportamos cartão e boleto</p>
       </div>
     </form>
   );
