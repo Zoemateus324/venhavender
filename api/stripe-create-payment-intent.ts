@@ -16,9 +16,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      success: false, 
-      error: 'Method not allowed' 
+    return res.status(405).json({
+      success: false,
+      error: 'Method not allowed'
     });
   }
 
@@ -41,16 +41,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Criar Payment Intent
     const params: Stripe.PaymentIntentCreateParams = {
-      amount: Math.round(amount), // Já vem em centavos do frontend
+      amount: Math.round(amount), // já vem em centavos do frontend
       currency,
       metadata,
-      // Usar lista explícita de métodos (não combinar com automatic_payment_methods)
-      payment_method_types: (currency || '').toLowerCase() === 'brl' ? ['card', 'pix','ticket'] : ['card'],
+      payment_method_types:
+        currency.toLowerCase() === 'brl'
+          ? ['card', 'pix', 'boleto']
+          : ['card'],
     };
 
     const paymentIntent = await stripe.paymentIntents.create(params);
 
-    // Log the created PaymentIntent (safe to log id and status; avoid logging full secrets in prod)
     console.log('[Stripe] Created PaymentIntent:', {
       id: paymentIntent.id,
       status: paymentIntent.status,
@@ -62,12 +63,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
     });
-
   } catch (error: any) {
     console.error('Erro ao criar Payment Intent:', error);
     return res.status(500).json({
       success: false,
-      error: error.message || 'Erro interno do servidor'
+      error: error.message || 'Erro interno do servidor',
     });
   }
 }
