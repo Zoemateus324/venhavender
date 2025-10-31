@@ -235,9 +235,14 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           .insert([adData]);
 
         if (error) throw error;
-        // Redirecionar para pagamento do plano, se houver valor
+        // Redirecionar para pagamento do plano, se aplicável
         const chosenPlan = plans.find(p => p.id === formData.plan_id);
-        if (chosenPlan && chosenPlan.price > 0) {
+        const isAdmin = user?.role === 'admin';
+        const isGoldPlan = !!chosenPlan && (
+          (chosenPlan as any).slug === 'gold' || chosenPlan.photo_limit === 999 || /ouro/i.test(chosenPlan.name)
+        );
+        // Admin pode criar plano ouro sem cobrança
+        if (chosenPlan && chosenPlan.price > 0 && !(isAdmin && isGoldPlan)) {
           window.location.href = `/payment?plan_id=${encodeURIComponent(chosenPlan.id)}`;
           return; // evitar continuar o fluxo local
         }
