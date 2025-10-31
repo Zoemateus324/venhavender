@@ -187,7 +187,7 @@ const AdminSpecialAdsPage: React.FC = () => {
     try {
       const { error: uploadError } = await supabase.storage
         .from('ads_especiais')
-        .upload(filePath, file);
+        .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 

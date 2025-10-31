@@ -111,7 +111,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
         const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
         const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
         const filePath = `image-ads/${ownerId || user?.id}/${fileName}`;
-        const { error: uploadError } = await supabase.storage.from('ads').upload(filePath, file, { upsert: false });
+        const { error: uploadError } = await supabase.storage.from('ads').upload(filePath, file, { upsert: true });
         if (uploadError) throw uploadError;
         const { data } = supabase.storage.from('ads').getPublicUrl(filePath);
         uploadedUrls.push(data.publicUrl);
@@ -130,7 +130,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
     const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
     const filePath = `${pathPrefix}/${ownerId || user?.id}/${fileName}`;
-    const { error: uploadError } = await supabase.storage.from('ads').upload(filePath, file, { upsert: false });
+    const { error: uploadError } = await supabase.storage.from('ads').upload(filePath, file, { upsert: true });
     if (uploadError) throw uploadError;
     const { data } = supabase.storage.from('ads').getPublicUrl(filePath);
     return data.publicUrl;
