@@ -42,7 +42,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       amount: Math.round(amount),
       currency,
       metadata,
-      payment_method_types: currency.toLowerCase() === 'brl' ? ['card', 'boleto'] : ['card'],
+      // Temporariamente apenas cartão (evita erro do Elements quando boleto não está habilitado)
+      payment_method_types: ['card'],
     };
 
     const paymentIntent = await stripe.paymentIntents.create(params);

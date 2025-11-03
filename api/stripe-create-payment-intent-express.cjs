@@ -35,8 +35,8 @@ router.post('/stripe-create-payment-intent', async (req, res) => {
       amount: Math.round(amount), // Já vem em centavos do frontend
       currency,
       metadata,
-      // Usar lista explícita de métodos (não combinar com automatic_payment_methods)
-      payment_method_types: ((currency || '').toLowerCase() === 'brl') ? ['card', 'pix'] : ['card']
+      // Temporariamente apenas cartão
+      payment_method_types: ['card']
     };
 
     const paymentIntent = await stripe.paymentIntents.create(params);

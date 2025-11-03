@@ -23,6 +23,8 @@ const PaymentPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [processingPayment, setProcessingPayment] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [discountPercent, setDiscountPercent] = useState<number>(0);
   
   // Get plan ID from URL or query params
   const params = new URLSearchParams(window.location.search);
@@ -87,6 +89,34 @@ const PaymentPage: React.FC = () => {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  const getDiscountedAmount = () => {
+    const base = selectedPlan?.price || 0;
+    if (!discountPercent) return base;
+    const discount = Math.min(100, Math.max(0, discountPercent));
+    return Math.max(0, base * (1 - discount / 100));
+  };
+
+  const handleApplyCoupon = async () => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    try {
+      // Regras simples de exemplo; ajuste para buscar de uma tabela no Supabase se existir
+      // DESCONTO10 -> 10%, DESCONTO20 -> 20%
+      if (code === 'DESCONTO10') {
+        setDiscountPercent(10);
+      } else if (code === 'DESCONTO20') {
+        setDiscountPercent(20);
+      } else {
+        setDiscountPercent(0);
+        toast.error('Cupom inválido.');
+        return;
+      }
+      toast.success('Cupom aplicado!');
+    } catch (e) {
+      toast.error('Não foi possível validar o cupom.');
+    }
   };
 
   const handlePaymentSuccess = async (paymentIntent: any) => {
@@ -237,7 +267,7 @@ const PaymentPage: React.FC = () => {
             
             
             <StripePaymentForm
-              amount={selectedPlan.price}
+              amount={getDiscountedAmount()}
               currency="brl"
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
@@ -246,6 +276,8 @@ const PaymentPage: React.FC = () => {
                   ? { plan_id: selectedPlan.id, plan_name: selectedPlan.name }
                   : { special_ad_id: specialAdId || '', item_name: 'Anúncio de Rodapé' }),
                 user_id: user?.id || '',
+                coupon_code: couponCode.trim().toUpperCase() || undefined,
+                coupon_discount_percent: discountPercent ? String(discountPercent) : undefined,
               }}
             />
           </div>
@@ -255,6 +287,29 @@ const PaymentPage: React.FC = () => {
         <div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 sticky top-6">
             <h2 className="text-lg font-semibold mb-4">Resumo do Pedido</h2>
+            {/* Cupom */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cupom de desconto</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  placeholder="Digite seu cupom"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <button
+                  onClick={handleApplyCoupon}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                  type="button"
+                >
+                  Aplicar
+                </button>
+              </div>
+              {discountPercent > 0 && (
+                <p className="text-xs text-green-700 mt-1">Desconto de {discountPercent}% aplicado.</p>
+              )}
+            </div>
             
             <div className="border-t border-gray-200 pt-4 mb-4">
               <div className="flex justify-between mb-2">
@@ -277,10 +332,20 @@ const PaymentPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="border-t border-gray-200 pt-4 mb-4">
+            <div className="border-t border-gray-200 pt-4 mb-4 space-y-1">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Subtotal</span>
+                <span>{formatCurrency(selectedPlan.price)}</span>
+              </div>
+              {discountPercent > 0 && (
+                <div className="flex justify-between text-green-700">
+                  <span>Desconto ({discountPercent}%)</span>
+                  <span>-{formatCurrency(selectedPlan.price - getDiscountedAmount())}</span>
+                </div>
+              )}
               <div className="flex justify-between font-medium">
                 <span>Total</span>
-                <span className="text-lg">{formatCurrency(selectedPlan.price)}</span>
+                <span className="text-lg">{formatCurrency(getDiscountedAmount())}</span>
               </div>
             </div>
             
