@@ -164,7 +164,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
         const data = await response.json();
         // Log the response to help debug elements session 400 errors
-        console.log('[Stripe] createPaymentIntent response:', data);
+        //console.log('[Stripe] createPaymentIntent response:', data);
 
         if (data.success) {
           setClientSecret(data.clientSecret);
