@@ -1,14 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 
-<<<<<<< HEAD
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-=======
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover',
-
-});
->>>>>>> d2e339fd8b064fe159bc59b723e5a55e700d75e8
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Configurar headers CORS
@@ -46,13 +39,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Criar Payment Intent
     const params: Stripe.PaymentIntentCreateParams = {
-      amount: Math.round(amount), // já vem em centavos do frontend
+      amount: Math.round(amount),
       currency,
       metadata,
-      payment_method_types:
-        currency.toLowerCase() === 'brl'
-          ? ['card', 'pix']
-          : ['card'],
+      payment_method_types: currency.toLowerCase() === 'brl' ? ['card', 'boleto'] : ['card'],
     };
 
     const paymentIntent = await stripe.paymentIntents.create(params);
