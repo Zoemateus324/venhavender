@@ -9,7 +9,12 @@ import {
 import { CreditCard, Lock, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+if (!PUBLISHABLE_KEY) {
+  // Ajuda a identificar a causa do erro "reading 'match'" quando a chave não está definida
+  console.error('[Stripe] VITE_STRIPE_PUBLISHABLE_KEY ausente. Defina no .env.local (dev) ou nas variáveis de build (prod).');
+}
+const stripePromise = PUBLISHABLE_KEY ? loadStripe(PUBLISHABLE_KEY) : (Promise.resolve(null as any));
 
 interface StripePaymentFormProps {
   amount: number;
@@ -186,6 +191,16 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
         <p className="text-gray-600">Inicializando pagamento...</p>
+      </div>
+    );
+  }
+
+  if (!PUBLISHABLE_KEY) {
+    return (
+      <div className="text-center py-8">
+        <XCircle size={48} className="text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-red-700 mb-2">Chave do Stripe ausente</h3>
+        <p className="text-gray-600">Defina VITE_STRIPE_PUBLISHABLE_KEY e recarregue.</p>
       </div>
     );
   }
