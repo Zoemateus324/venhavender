@@ -64,6 +64,34 @@ function AppContent() {
     recordView();
   }, [location.pathname, location.search, user?.id]);
 
+  // Apply dynamic SEO title
+  useEffect(() => {
+    if (settings.meta_title) {
+      document.title = settings.meta_title;
+    }
+  }, [settings.meta_title]);
+
+  // Apply meta description
+  useEffect(() => {
+    if (settings.meta_description) {
+      let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'description';
+        document.head.appendChild(meta);
+      }
+      meta.content = settings.meta_description;
+    }
+  }, [settings.meta_description]);
+
+  // Apply primary color CSS variable
+  useEffect(() => {
+    if (settings.primary_color) {
+      const root = document.documentElement;
+      root.style.setProperty('--vv-primary', settings.primary_color);
+    }
+  }, [settings.primary_color]);
+
   const handleSearch = (query: string) => {
     navigate(`/ads?search=${encodeURIComponent(query)}`);
   };
@@ -104,23 +132,7 @@ function AppContent() {
 
   return (
     <>
-      {/* Apply dynamic SEO title and description if available */}
-      {settings.meta_title && (() => { document.title = settings.meta_title; })()}
-      {settings.meta_description && (() => {
-        let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.name = 'description';
-          document.head.appendChild(meta);
-        }
-        meta.content = settings.meta_description;
-      })()}
-
-      {/* Apply primary color to CSS variable */}
-      {settings.primary_color && (() => {
-        const root = document.documentElement;
-        root.style.setProperty('--vv-primary', settings.primary_color);
-      })()}
+      
       <Header
         onSearch={handleSearch}
         onShowFavorites={handleShowFavorites}
