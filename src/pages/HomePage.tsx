@@ -113,10 +113,7 @@ export default function HomePage() {
 
           {/* Visitantes únicos no período */}
           <div className="mt-6 sm:mt-8 flex items-center justify-center">
-            <div>
-              <p className="text-sm text-gray-100/80 text-center">Visitantes únicos no período</p>
-              <p className="text-2xl font-bold mt-1 text-center">{visitorsCount}</p>
-            </div>
+           
           </div>
         </div>
       </section>

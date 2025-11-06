@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { BarChart3, Users, FileText, CreditCard, TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
-import AdminLayout from './AdminLayout';
+ 
 
 interface DashboardStats {
   totalUsers: number;
@@ -20,7 +19,6 @@ interface DashboardStats {
 
 const AdminDashboardPage: React.FC = () => {
   const { user } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
@@ -244,10 +242,7 @@ const AdminDashboardPage: React.FC = () => {
     fetchDashboardStats();
   }, []);
 
-  // If this is the parent route with children, render the Outlet
-  if (location.pathname !== '/admin') {
-    return <AdminLayout />;
-  }
+  
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
