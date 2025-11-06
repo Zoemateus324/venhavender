@@ -77,10 +77,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant permissions
-GRANT SELECT ON special_ads TO anon, authenticated;
-GRANT INSERT, UPDATE, DELETE ON special_ads TO authenticated;
-GRANT USAGE ON SEQUENCE special_ads_id_seq TO authenticated;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind = 'S'            -- sequence
+      AND c.relname = 'special_ads_id_seq'
+      AND n.nspname = 'public'
+  ) THEN
+    EXECUTE 'GRANT USAGE ON SEQUENCE public.special_ads_id_seq TO authenticated';
+  END IF;
+END
+$$;
 
 -- Insert some sample data (optional)
 INSERT INTO special_ads (title, description, price, status, expires_at, image_url, created_by) VALUES

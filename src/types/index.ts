@@ -104,6 +104,16 @@ export interface Request {
   updated_at: string;
   user?: User;
 }
+export interface HighlightPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration_days: number;
+  badge_label: string;
+  badge_color: string;
+  active: boolean;
+}
 
 export interface Favorite {
   id: string;

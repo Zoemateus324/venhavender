@@ -15,6 +15,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [highlightPlans, setHighlightPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [ownerId, setOwnerId] = useState<string>('');
   const [allUsers, setAllUsers] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -40,6 +41,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
     fetchPlans();
     // Se for admin, carregar usuários para poder criar anúncio em nome de alguém
     fetchUsersForAdmin();
+    fetchHighlightPlans();
   }, []);
 
   const fetchCategories = async () => {
@@ -68,6 +70,20 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
       setPlans(data || []);
     } catch (error) {
       console.error('Error fetching plans:', error);
+    }
+  };
+
+  const fetchHighlightPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('highlight_plans')
+        .select('*')
+        .eq('active', true)
+        .order('price');
+      if (error) throw error;
+      setHighlightPlans(data || []);
+    } catch (error) {
+      console.error('Error fetching highlight plans:', error);
     }
   };
 
@@ -211,7 +227,7 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + getAdDuration());
 
-        const adData = {
+        const adData: any = {
           user_id: ownerId || user.id,
           category_id: formData.category_id,
           type: formData.type,
@@ -230,9 +246,22 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           admin_approved: true
         };
 
-        const { error } = await supabase
+        // Se houver plano de destaque selecionado, salvar campos relacionados
+        if ((formData as any).highlight_plan_id) {
+          adData.highlight_plan_id = (formData as any).highlight_plan_id;
+          const hp = highlightPlans.find(h => h.id === (formData as any).highlight_plan_id);
+          if (hp?.duration_days) {
+            const expires = new Date();
+            expires.setDate(expires.getDate() + hp.duration_days);
+            adData.highlight_expires_at = expires.toISOString();
+          }
+        }
+
+        const { data: created, error } = await supabase
           .from('ads')
-          .insert([adData]);
+          .insert([adData])
+          .select('id')
+          .single();
 
         if (error) throw error;
         // Redirecionar para pagamento do plano, se aplicável
@@ -245,6 +274,14 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
         if (chosenPlan && chosenPlan.price > 0 && !(isAdmin && isGoldPlan)) {
           window.location.href = `/payment?plan_id=${encodeURIComponent(chosenPlan.id)}`;
           return; // evitar continuar o fluxo local
+        }
+
+        // Redirecionar para pagamento do destaque, se aplicável
+        const chosenHighlight = highlightPlans.find(h => h.id === (formData as any).highlight_plan_id);
+        if (chosenHighlight && chosenHighlight.price > 0) {
+          const adId = created?.id;
+          window.location.href = `/payment?highlight_plan_id=${encodeURIComponent(chosenHighlight.id)}${adId ? `&ad_id=${encodeURIComponent(adId)}` : ''}`;
+          return;
         }
       }
 
@@ -534,6 +571,43 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Planos de Destaque (opcional) */}
+              <div className="border rounded-lg p-6 bg-white">
+                <h4 className="font-semibold text-lg mb-2">Destaque do Anúncio (opcional)</h4>
+                {highlightPlans.length === 0 ? (
+                  <div className="text-sm text-gray-500">Nenhum plano de destaque disponível no momento.</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {highlightPlans.map((hp) => (
+                      <div
+                        key={hp.id}
+                        className={`border rounded-lg p-4 cursor-pointer transition-all ${ (formData as any).highlight_plan_id === hp.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}
+                        onClick={() => setFormData(prev => ({ ...prev, ...( { highlight_plan_id: hp.id } as any) }))}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium text-gray-900">{hp.name}</div>
+                          {hp.badge_label && (
+                            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: (hp.badge_color || '#f97316') + '22', color: hp.badge_color || '#f97316' }}>{hp.badge_label}</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600">{hp.duration_days} dias</div>
+                        <div className="mt-2 font-bold">R$ {Number(hp.price).toFixed(2)}</div>
+                        {hp.description && <div className="text-xs text-gray-500 mt-1">{hp.description}</div>}
+                      </div>
+                    ))}
+                    {(formData as any).highlight_plan_id && (
+                      <button
+                        type="button"
+                        className="border rounded-lg p-4 text-left hover:border-gray-300"
+                        onClick={() => setFormData(prev => { const next: any = { ...prev }; delete next.highlight_plan_id; return next; })}
+                      >
+                        Remover destaque
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Upload de imagens adicional conforme plano (prata/ouro) */}

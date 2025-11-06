@@ -39,6 +39,14 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   };
 
+  const isHighlighted = () => {
+    const anyAd = ad as any;
+    if (!anyAd.highlight_plan_id) return false;
+    const expRaw = anyAd.highlight_expires_at as string | undefined;
+    if (!expRaw) return true;
+    return new Date(expRaw).getTime() > Date.now();
+  };
+
   const isExpiringSoon = () => {
     const days = getDaysUntilExpiration();
     return days !== null && days >= 0 && days <= 3;
@@ -142,9 +150,16 @@ export default function AdCard({ ad, onFavorite, onContact, isFavorited }: AdCar
           </button>
         )}
 
-        {/* Plan Badge */}
+        {/* Plan Badge (Header) */}
         {ad.type === 'header' && (
           <div className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-2 py-1 rounded text-xs font-medium">
+            DESTAQUE
+          </div>
+        )}
+
+        {/* Highlight Badge (Plano de Destaque) */}
+        {isHighlighted() && ad.type !== 'header' && (
+          <div className="absolute top-3 left-3 bg-orange-600 text-white px-2 py-1 rounded text-xs font-medium shadow">
             DESTAQUE
           </div>
         )}

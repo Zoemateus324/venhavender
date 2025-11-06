@@ -9,12 +9,7 @@ export default function AdminRoute({ children }: AdminRouteProps) {
   const { user, loading } = useAuth();
 
   // Log para depuração
-  console.log('AdminRoute - Estado do usuário:', { 
-    user, 
-    loading, 
-    isAdmin: user?.role === 'admin',
-    userRole: user?.role
-  });
+ 
 
   if (loading) {
     return (

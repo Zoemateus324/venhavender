@@ -46,6 +46,7 @@ const AdminLayout: React.FC = () => {
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
     { icon: <FileText size={20} />, label: 'Anúncios', path: '/admin/ads' },
+    { icon: <Star size={20} />, label: 'Planos de Destaque', path: '/admin/highlight-plans' },
     { icon: <Star size={20} />, label: 'Anúncios Especiais', path: '/admin/special-ads' },
     { icon: <Users size={20} />, label: 'Usuários', path: '/admin/users' },
     { icon: <Tag size={20} />, label: 'Categorias', path: '/admin/categories' },

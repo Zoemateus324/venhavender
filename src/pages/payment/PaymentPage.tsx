@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import StripePaymentForm from '../../components/StripePaymentForm';
 
@@ -21,7 +21,7 @@ const PaymentPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(true);
-  const [processingPayment, setProcessingPayment] = useState<boolean>(false);
+  const [, setProcessingPayment] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [couponCode, setCouponCode] = useState<string>('');
   const [discountPercent, setDiscountPercent] = useState<number>(0);
@@ -35,10 +35,14 @@ const PaymentPage: React.FC = () => {
   const customAmount = customAmountParam ? parseFloat(customAmountParam) : null;
   const exposuresParam = params.get('exposures');
   const footerExposures = exposuresParam ? parseInt(exposuresParam) : 720;
+  const highlightPlanId = params.get('highlight_plan_id');
+  const adId = params.get('ad_id');
 
   useEffect(() => {
     if (planId) {
       fetchPlanDetails(planId);
+    } else if (highlightPlanId) {
+      fetchHighlightPlanDetails(highlightPlanId);
     } else if (isSpecialAdFlow && customAmount && !isNaN(customAmount)) {
       // Configurar pagamento customizado para anúncio de rodapé
       setSelectedPlan({
@@ -56,7 +60,7 @@ const PaymentPage: React.FC = () => {
       toast.error('Nenhum item selecionado para pagamento.');
       navigate('/dashboard');
     }
-  }, [planId]);
+  }, [planId, highlightPlanId]);
 
   const fetchPlanDetails = async (id: string) => {
     try {
@@ -78,6 +82,39 @@ const PaymentPage: React.FC = () => {
     } catch (error) {
       console.error('Erro ao carregar detalhes do plano:', error);
       toast.error('Erro ao carregar detalhes do plano.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchHighlightPlanDetails = async (id: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('highlight_plans')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      if (!data) {
+        toast.error('Plano de destaque não encontrado.');
+        navigate('/');
+        return;
+      }
+
+      setSelectedPlan({
+        id: data.id,
+        name: `Destaque: ${data.name}`,
+        price: data.price,
+        description: data.description || 'Plano de destaque de anúncio',
+        features: [],
+        max_images: 0,
+        duration_days: data.duration_days,
+      } as any);
+    } catch (error) {
+      console.error('Erro ao carregar detalhes do plano de destaque:', error);
+      toast.error('Erro ao carregar detalhes do destaque.');
     } finally {
       setLoading(false);
     }
@@ -125,7 +162,7 @@ const PaymentPage: React.FC = () => {
     try {
       setProcessingPayment(true);
 
-      // Create payment record (plano ou anúncio de rodapé)
+      // Create payment record (plano, destaque ou anúncio de rodapé)
       const paymentPayload: any = {
         user_id: user.id,
         amount: selectedPlan.price,
@@ -139,6 +176,9 @@ const PaymentPage: React.FC = () => {
       }
       if (isSpecialAdFlow) {
         paymentPayload.metadata = { type: 'footer_ad' };
+      }
+      if (highlightPlanId) {
+        paymentPayload.metadata = { ...(paymentPayload.metadata || {}), type: 'highlight', highlight_plan_id: highlightPlanId, ad_id: adId || null };
       }
 
       const { error: paymentError } = await supabase
@@ -216,6 +256,20 @@ const PaymentPage: React.FC = () => {
         if (userError) throw userError;
       }
 
+      // Se for destaque, atualizar o anúncio com expiracão de destaque
+      if (highlightPlanId && adId) {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + (selectedPlan.duration_days || 0));
+        const { error: adUpdateError } = await supabase
+          .from('ads')
+          .update({
+            highlight_plan_id: highlightPlanId,
+            highlight_expires_at: expiresAt.toISOString(),
+          })
+          .eq('id', adId);
+        if (adUpdateError) throw adUpdateError;
+      }
+
       toast.success('Pagamento processado com sucesso!');
       navigate('/');
     } catch (error) {
@@ -276,8 +330,8 @@ const PaymentPage: React.FC = () => {
                   ? { plan_id: selectedPlan.id, plan_name: selectedPlan.name }
                   : { special_ad_id: specialAdId || '', item_name: 'Anúncio de Rodapé' }),
                 user_id: user?.id || '',
-                coupon_code: couponCode.trim().toUpperCase() || undefined,
-                coupon_discount_percent: discountPercent ? String(discountPercent) : undefined,
+                ...(couponCode.trim() ? { coupon_code: couponCode.trim().toUpperCase() } : {}),
+                ...(discountPercent ? { coupon_discount_percent: String(discountPercent) } : {}),
               }}
             />
           </div>
