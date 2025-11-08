@@ -154,29 +154,6 @@ export default function AdGrid({
 
       if (error) throw error;
       setAds(data || []);
-
-      // Se a tabela de categorias estiver vazia ou a query falhar em retornar itens,
-      // derivamos as categorias a partir dos anúncios carregados para popular o filtro.
-      if ((data?.length || 0) > 0) {
-        const derivedMap = new Map<string, { id: string; name: string; slug: string; icon: string; created_at: string }>();
-        for (const ad of data as any[]) {
-          const id = ad.category_id as string | undefined;
-          const name = ad.category?.name as string | undefined;
-          if (id && name && !derivedMap.has(id)) {
-            derivedMap.set(id, {
-              id,
-              name,
-              slug: '',
-              icon: ad.category?.icon || '',
-              created_at: ''
-            });
-          }
-        }
-        const derived = Array.from(derivedMap.values());
-        if (derived.length > 0 && categories.length === 0) {
-          setCategories(derived as any);
-        }
-      }
     } catch (error) {
       console.error('Error fetching ads:', error);
     } finally {

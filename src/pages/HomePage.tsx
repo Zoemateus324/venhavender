@@ -7,6 +7,9 @@ import SpecialAdsCarousel from '../components/SpecialAdsCarousel';
 import { TrendingUp, ShieldCheck, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+
+
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
