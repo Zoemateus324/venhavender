@@ -152,6 +152,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const createPaymentIntent = async () => {
       try {
         // Usar o caminho relativo para aproveitar o proxy do Vite
@@ -171,20 +172,30 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
         // Log the response to help debug elements session 400 errors
         //console.log('[Stripe] createPaymentIntent response:', data);
 
+        if (cancelled) return;
+
         if (data.success) {
           setClientSecret(data.clientSecret);
         } else {
           onError(data.error || 'Erro ao inicializar pagamento');
         }
       } catch (error: any) {
+        if (cancelled) return;
         onError(error.message || 'Erro de conexão');
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     createPaymentIntent();
-  }, [amount, currency, metadata, onError]);
+    return () => {
+      cancelled = true;
+    };
+    // Remover metadata das dependências para evitar recriação desnecessária
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amount, currency]);
 
   if (loading) {
     return (
@@ -235,8 +246,9 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     },
   };
 
+  // Usar key para forçar remount quando clientSecret mudar (evita erro de prop mutável)
   return (
-    <Elements options={options} stripe={stripePromise}>
+    <Elements key={clientSecret} options={options} stripe={stripePromise}>
       <PaymentForm
         amount={amount}
         currency={currency}

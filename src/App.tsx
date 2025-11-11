@@ -34,29 +34,35 @@ function AppContent() {
     const recordView = async () => {
       try {
         const pathname = location.pathname + (location.search || '');
-        // Prefer legacy column "page_path" first to avoid 400s in environments without "path"
-        const { error: errPagePathFirst } = await supabase.from('page_views').insert([
+        // Tenta inserir apenas uma vez, verificando qual coluna existe
+        // Primeiro tenta page_path (legacy)
+        const { error: errPagePath } = await supabase.from('page_views').insert([
           {
             device_id: deviceId,
             user_id: user?.id || null,
             page_path: pathname,
           },
         ]);
-        if (errPagePathFirst) {
-          // Fallback: try the alternate column "path"
-          const { error: errPathSecond } = await supabase.from('page_views').insert([
+        
+        // Se falhar com 400 (coluna não existe) ou 409 (conflito), tenta path
+        if (errPagePath && (errPagePath.code === 'PGRST116' || errPagePath.code === '23505' || errPagePath.message?.includes('column') || errPagePath.message?.includes('does not exist'))) {
+          const { error: errPath } = await supabase.from('page_views').insert([
             {
               device_id: deviceId,
               user_id: user?.id || null,
               path: pathname,
             },
           ]);
-          if (errPathSecond) {
-            // Last resort: log once for debugging
-            console.debug('page_views insert failed', { errPagePathFirst, errPathSecond });
+          // Se ainda falhar, apenas loga em debug (não é crítico)
+          if (errPath && errPath.code !== '23505') { // Ignora conflitos (duplicatas)
+            console.debug('page_views insert failed (both columns)', { errPagePath, errPath });
           }
+        } else if (errPagePath && errPagePath.code !== '23505') {
+          // Se não for erro de coluna inexistente nem conflito, loga
+          console.debug('page_views insert failed', errPagePath);
         }
       } catch (e) {
+        // Erros não críticos - apenas loga em debug
         console.debug('page_views unexpected error', e);
       }
     };

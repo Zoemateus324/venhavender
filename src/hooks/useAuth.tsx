@@ -53,11 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserProfile = async (userId: string) => {
     try {
       // Primeiro, verificar se o usuário existe na tabela users para obter o role
+      // Usar maybeSingle() para evitar erro 406 quando usuário não existe ainda
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       // Tentar buscar da tabela user_plans
       const { data: userPlan, error: userPlanError } = await supabase
