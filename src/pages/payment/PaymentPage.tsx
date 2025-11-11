@@ -254,6 +254,18 @@ const PaymentPage: React.FC = () => {
           });
 
         if (userError) throw userError;
+
+        // Se houver ad_id, ativar o anúncio após pagamento aprovado
+        if (adId) {
+          const { error: adUpdateError } = await supabase
+            .from('ads')
+            .update({
+              status: 'active',
+              admin_approved: true,
+            })
+            .eq('id', adId);
+          if (adUpdateError) throw adUpdateError;
+        }
       }
 
       // Se for destaque, atualizar o anúncio com expiracão de destaque
@@ -265,6 +277,9 @@ const PaymentPage: React.FC = () => {
           .update({
             highlight_plan_id: highlightPlanId,
             highlight_expires_at: expiresAt.toISOString(),
+            // Ativar anúncio se estiver pendente
+            status: 'active',
+            admin_approved: true,
           })
           .eq('id', adId);
         if (adUpdateError) throw adUpdateError;

@@ -199,6 +199,39 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
     return selectedPlan?.price || 0;
   };
 
+  // Verifica se o anúncio requer pagamento antes de ser ativado
+  const requiresPayment = () => {
+    // Anúncios de rodapé sempre requerem pagamento
+    if (formData.type === 'footer') {
+      return true;
+    }
+
+    const selectedPlan = plans.find(p => p.id === formData.plan_id);
+    if (!selectedPlan) return false;
+
+    // Planos pagos (price > 0)
+    if (selectedPlan.price > 0) {
+      return true;
+    }
+
+    // Verificar por nome/slug se é plano pago
+    const planName = selectedPlan.name.toLowerCase();
+    const planSlug = (selectedPlan as any).slug?.toLowerCase() || '';
+    
+    // Planos que sempre requerem pagamento
+    const paidPlans = ['prata', 'silver', 'ouro', 'gold', 'loja de bairro', 'anúncios especiais', 'especial'];
+    if (paidPlans.some(paid => planName.includes(paid) || planSlug.includes(paid))) {
+      return true;
+    }
+
+    // Tipo header (anúncios especiais) sempre requer pagamento
+    if (formData.type === 'header') {
+      return true;
+    }
+
+    return false;
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
 
@@ -227,6 +260,10 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + getAdDuration());
 
+        // Verificar se requer pagamento
+        const needsPayment = requiresPayment();
+        const isAdmin = user?.role === 'admin';
+        
         const adData: any = {
           user_id: ownerId || user.id,
           category_id: formData.category_id,
@@ -240,10 +277,12 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           contact_info: formData.contact_info,
           plan_id: formData.plan_id || null,
           end_date: endDate.toISOString(),
-          status: 'active',
+          // Se requer pagamento e não é admin, fica pendente até pagamento
+          status: (needsPayment && !isAdmin) ? 'pending' : 'active',
           availability_status: formData.availability_status,
           max_exposures: 0,
-          admin_approved: true
+          // Admin sempre aprova automaticamente, outros só se não precisar pagar
+          admin_approved: isAdmin || !needsPayment
         };
 
         // Se houver plano de destaque selecionado, salvar campos relacionados
@@ -264,16 +303,26 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           .single();
 
         if (error) throw error;
+        
         // Redirecionar para pagamento do plano, se aplicável
         const chosenPlan = plans.find(p => p.id === formData.plan_id);
         const isAdmin = user?.role === 'admin';
         const isGoldPlan = !!chosenPlan && (
           (chosenPlan as any).slug === 'gold' || chosenPlan.photo_limit === 999 || /ouro/i.test(chosenPlan.name)
         );
-        // Admin pode criar plano ouro sem cobrança
-        if (chosenPlan && chosenPlan.price > 0 && !(isAdmin && isGoldPlan)) {
-          window.location.href = `/payment?plan_id=${encodeURIComponent(chosenPlan.id)}`;
-          return; // evitar continuar o fluxo local
+        
+        // Se requer pagamento e não é admin, redirecionar para pagamento
+        if (needsPayment && !isAdmin) {
+          if (chosenPlan && chosenPlan.price > 0) {
+            const adId = created?.id;
+            window.location.href = `/payment?plan_id=${encodeURIComponent(chosenPlan.id)}${adId ? `&ad_id=${encodeURIComponent(adId)}` : ''}`;
+            return;
+          }
+        } else if (chosenPlan && chosenPlan.price > 0 && !(isAdmin && isGoldPlan)) {
+          // Admin pode criar plano ouro sem cobrança, mas outros planos pagos precisam pagar
+          const adId = created?.id;
+          window.location.href = `/payment?plan_id=${encodeURIComponent(chosenPlan.id)}${adId ? `&ad_id=${encodeURIComponent(adId)}` : ''}`;
+          return;
         }
 
         // Redirecionar para pagamento do destaque, se aplicável
@@ -286,6 +335,16 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
       }
 
       // Fluxo gratuito ou rodapé já tratado
+      // Se chegou aqui e o anúncio está pendente, mostrar mensagem
+      if (formData.type !== 'footer') {
+        const needsPayment = requiresPayment();
+        const isAdmin = user?.role === 'admin';
+        if (needsPayment && !isAdmin) {
+          toast.success('Anúncio criado! Aguardando aprovação após pagamento.');
+        } else {
+          toast.success('Anúncio criado com sucesso!');
+        }
+      }
 
       onSuccess();
       onClose();

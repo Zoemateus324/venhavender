@@ -125,11 +125,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    // Primeiro, fazer login no Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password
     });
-    if (error) throw error;
+    
+    if (authError) throw authError;
+    
+    // Verificar se o usuário existe na tabela users
+    if (authData.user) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+      
+      // Se o usuário não existe na tabela users, fazer logout e negar acesso
+      if (userError || !userData) {
+        await supabase.auth.signOut();
+        throw new Error('Conta não encontrada. Por favor, registre-se primeiro.');
+      }
+    }
   };
 
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
