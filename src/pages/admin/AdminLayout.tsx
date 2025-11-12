@@ -15,7 +15,8 @@ import {
   Cog,
   Star,
   Tag,
-  Shield
+  Shield,
+  Percent
 } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
@@ -50,6 +51,7 @@ const AdminLayout: React.FC = () => {
     { icon: <Star size={20} />, label: 'Anúncios Especiais', path: '/admin/special-ads' },
     { icon: <Users size={20} />, label: 'Usuários', path: '/admin/users' },
     { icon: <Tag size={20} />, label: 'Categorias', path: '/admin/categories' },
+    { icon: <Percent size={20} />, label: 'Cupons', path: '/admin/coupons' },
     { icon: <BarChart3 size={20} />, label: 'Planos', path: '/admin/plans' },
     { icon: <CreditCard size={20} />, label: 'Pagamentos', path: '/admin/payments' },
     { icon: <LineChart size={20} />, label: 'Relatórios', path: '/admin/reports' },

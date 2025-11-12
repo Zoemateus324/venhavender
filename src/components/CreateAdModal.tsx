@@ -285,6 +285,27 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
           admin_approved: isAdmin || !needsPayment
         };
 
+        const chosenPlan = plans.find(p => p.id === formData.plan_id);
+
+        if (needsPayment && !isAdmin) {
+          const pendingPayload: any = {
+            adData,
+            highlight_plan_id: (formData as any).highlight_plan_id || null
+          };
+
+          try {
+            sessionStorage.setItem('pending_ad_creation', JSON.stringify(pendingPayload));
+          } catch (error) {
+            console.warn('Não foi possível armazenar anúncio pendente:', error);
+          }
+
+          setLoading(false);
+          if (chosenPlan && chosenPlan.price > 0) {
+            window.location.href = `/payment?plan_id=${encodeURIComponent(chosenPlan.id)}`;
+          }
+          return;
+        }
+
         // Se houver plano de destaque selecionado, salvar campos relacionados
         if ((formData as any).highlight_plan_id) {
           adData.highlight_plan_id = (formData as any).highlight_plan_id;
@@ -305,8 +326,6 @@ export default function CreateAdModal({ onClose, onSuccess }: CreateAdModalProps
         if (error) throw error;
         
         // Redirecionar para pagamento do plano, se aplicável
-        const chosenPlan = plans.find(p => p.id === formData.plan_id);
-        const isAdmin = user?.role === 'admin';
         const isGoldPlan = !!chosenPlan && (
           (chosenPlan as any).slug === 'gold' || chosenPlan.photo_limit === 999 || /ouro/i.test(chosenPlan.name)
         );

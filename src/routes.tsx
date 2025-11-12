@@ -26,6 +26,7 @@ import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import AdminSpecialAdsPage from './pages/admin/AdminSpecialAdsPage';
 import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
 import AdminAsaasValidationPage from './pages/admin/AdminAsaasValidationPage';
+import AdminCouponsPage from './pages/admin/AdminCouponsPage';
 import PaymentPage from './pages/payment/PaymentPage';
 import RenewPlanPage from './pages/payment/RenewPlanPage';
 import SupportPage from './pages/support/SupportPage';
@@ -111,6 +112,7 @@ const router = createBrowserRouter([
           { path: 'special-ads', element: <AdminSpecialAdsPage /> },
           { path: 'users', element: <AdminUsersPage /> },
           { path: 'categories', element: <AdminCategoriesPage /> },
+          { path: 'coupons', element: <AdminCouponsPage /> },
           { path: 'plans', element: <AdminPlansPage /> },
           { path: 'payments', element: <AdminPaymentsPage /> },
           { path: 'asaas-validation', element: <AdminAsaasValidationPage /> },

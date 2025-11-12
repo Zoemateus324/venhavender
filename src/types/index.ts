@@ -123,6 +123,19 @@ export interface Favorite {
   ad?: Ad;
 }
 
+export interface Coupon {
+  id: string;
+  code: string;
+  description?: string | null;
+  discount_percent: number;
+  max_uses?: number | null;
+  usage_count: number;
+  active: boolean;
+  expires_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface FooterAdContract {
   exposures: number;
   price: number;
